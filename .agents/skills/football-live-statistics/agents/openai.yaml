@@ -1,0 +1,5 @@
+interface:
+  display_name: "Estadísticas de fútbol en vivo"
+  short_description: "Diseña y evalúa el motor estadístico y sus alertas"
+  default_prompt: "Aplica el cerebro estadístico del proyecto a esta tarea."
+
