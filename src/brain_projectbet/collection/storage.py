@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from brain_projectbet.domain.models import MatchSnapshot
+from brain_projectbet.domain.candidates import CandidateObservation
 
 
 def _json_default(value: Any):
@@ -33,3 +34,15 @@ def load_snapshots(path: Path) -> list[MatchSnapshot]:
         data["captured_at"] = datetime.fromisoformat(data["captured_at"])
         snapshots.append(MatchSnapshot(**data))
     return snapshots
+
+
+def append_candidate_once(path: Path, candidate: CandidateObservation) -> bool:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.strip() and json.loads(line).get("candidate_id") == candidate.candidate_id:
+                return False
+    with path.open("a", encoding="utf-8") as stream:
+        stream.write(json.dumps(asdict(candidate), ensure_ascii=False, default=_json_default))
+        stream.write("\n")
+    return True

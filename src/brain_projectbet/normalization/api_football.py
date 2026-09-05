@@ -46,6 +46,7 @@ def normalize_snapshot(
         captured_at=captured_at,
         minute=_number(fixture_data.get("status", {}).get("elapsed")),
         status=str(fixture_data.get("status", {}).get("short", "UNKNOWN")),
+        minute_extra=_number(fixture_data.get("status", {}).get("extra")),
         home_team_id=home_id,
         away_team_id=away_id,
         score_home=_number(goals.get("home")),
@@ -62,6 +63,8 @@ def normalize_snapshot(
         possession_away=_number(away_stats.get("Ball Possession")),
         xg_home=_number(home_stats.get("expected_goals")),
         xg_away=_number(away_stats.get("expected_goals")),
+        red_cards_home=_number(home_stats.get("Red Cards")),
+        red_cards_away=_number(away_stats.get("Red Cards")),
         raw_metadata={"league": fixture.get("league"), "team_names": teams},
     )
 
