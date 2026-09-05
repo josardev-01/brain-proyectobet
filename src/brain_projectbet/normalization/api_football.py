@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from statistics import median
 from typing import Any, Mapping, Sequence
 
 from brain_projectbet.domain.models import MatchSnapshot, PrematchOdds
@@ -96,3 +97,36 @@ def extract_match_winner_odds(
                 except KeyError as error:
                     raise ValueError("mercado Match Winner incompleto") from error
     raise ValueError(f"no se encontró Match Winner para {bookmaker_name}")
+
+
+def extract_consensus_match_winner_odds(
+    odds_response: Mapping[str, Any],
+    *,
+    fixture_id: str,
+    captured_at: datetime,
+    minimum_bookmakers: int = 3,
+) -> tuple[PrematchOdds, int]:
+    markets: list[dict[str, float]] = []
+    for entry in odds_response.get("response", []):
+        for bookmaker in entry.get("bookmakers", []):
+            for bet in bookmaker.get("bets", []):
+                if bet.get("name") != "Match Winner":
+                    continue
+                values = {
+                    item["value"]: float(item["odd"])
+                    for item in bet.get("values", [])
+                }
+                if {"Home", "Draw", "Away"}.issubset(values):
+                    markets.append(values)
+    if len(markets) < minimum_bookmakers:
+        raise ValueError(
+            f"se requieren {minimum_bookmakers} bookmakers completos; disponibles: {len(markets)}"
+        )
+    return PrematchOdds(
+        provider="api-football-consensus",
+        provider_match_id=fixture_id,
+        captured_at=captured_at,
+        home=median(market["Home"] for market in markets),
+        draw=median(market["Draw"] for market in markets),
+        away=median(market["Away"] for market in markets),
+    ), len(markets)

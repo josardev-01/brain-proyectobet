@@ -31,3 +31,19 @@
 **Motivo:** Los favoritos que siguen perdiendo en minutos avanzados continúan siendo relevantes. Separar elegibilidad, episodio y presión evita alertar solo por marcador y permite evaluar cada componente.
 
 **Impacto:** Se deben iniciar snapshots desde el minuto 35 para precalentar la ventana de 10 minutos. La posesión se guarda como contexto. Toda la regla v1 se clasifica como `HEURÍSTICA` y será versionada al calibrarse.
+
+## DEC-008 — Heurística de presión v2 y consenso de odds
+
+**Problema:** La regla v1 podía activar una alerta con tiros y corners pero ningún tiro a puerta, dependía de un solo bookmaker y trataba incorrectamente algunos horizontes incompletos al final del partido.
+
+**Opciones:**
+
+- Mantener v1 hasta reunir histórico.
+- Añadir pesos arbitrarios a un Goal Pressure Score.
+- Mejorar invariantes observables sin afirmar calibración estadística.
+
+**Decisión:** Usar la mediana de al menos tres mercados 1X2 completos para el filtro de favorito. La presión v2 exige `SOT10 >= 2 OR (SOT10 >= 1 AND shots10 >= 3 AND corners10 >= 1)`, además de que el favorito no sea superado por el rival en tiros ni tiros a puerta dentro de la ventana. Se conserva la exclusión de desventaja por tarjeta roja. Horizontes incompletos sin gol al finalizar el partido se marcan como censurados.
+
+**Motivo:** Las odds de distintas casas no tienen idéntica calidad predictiva; el consenso reduce dependencia de un valor aislado. Los tiros a puerta representan amenaza más directa que volumen estéril. Marcador, tiempo restante, eventos recientes y tarjetas son variables dinámicas relevantes para predicción en juego.
+
+**Impacto:** La regla pasa a versión 2 pero permanece `HEURÍSTICA`. El backtesting deberá comparar v1 y v2 por precision, recall y lift, agrupando observaciones por partido para evitar tratar minutos correlacionados como muestras independientes.

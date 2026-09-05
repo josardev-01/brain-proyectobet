@@ -1,7 +1,11 @@
 import unittest
 from datetime import UTC, datetime
 
-from brain_projectbet.normalization.api_football import extract_match_winner_odds, normalize_snapshot
+from brain_projectbet.normalization.api_football import (
+    extract_consensus_match_winner_odds,
+    extract_match_winner_odds,
+    normalize_snapshot,
+)
 
 
 class ApiFootballNormalizationTests(unittest.TestCase):
@@ -57,6 +61,27 @@ class ApiFootballNormalizationTests(unittest.TestCase):
         )
         self.assertEqual(odds.favorite_side(), "away")
         self.assertAlmostEqual(odds.normalized_probabilities()[2], 0.6659, places=4)
+
+    def test_builds_median_consensus_from_complete_bookmakers(self) -> None:
+        def bookmaker(name, home, draw, away):
+            return {"name": name, "bets": [{"name": "Match Winner", "values": [
+                {"value": "Home", "odd": str(home)},
+                {"value": "Draw", "odd": str(draw)},
+                {"value": "Away", "odd": str(away)},
+            ]}]}
+
+        payload = {"response": [{"bookmakers": [
+            bookmaker("A", 7.0, 4.75, 1.42),
+            bookmaker("B", 6.0, 4.60, 1.44),
+            bookmaker("C", 6.8, 4.85, 1.39),
+        ]}]}
+        consensus, count = extract_consensus_match_winner_odds(
+            payload, fixture_id="1556663", captured_at=self.now
+        )
+        self.assertEqual(count, 3)
+        self.assertEqual(consensus.home, 6.8)
+        self.assertEqual(consensus.draw, 4.75)
+        self.assertEqual(consensus.away, 1.42)
 
 
 if __name__ == "__main__":

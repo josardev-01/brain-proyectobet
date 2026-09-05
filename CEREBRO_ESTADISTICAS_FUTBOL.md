@@ -500,12 +500,14 @@ Ejemplo únicamente como punto de partida:
 
 Clasificación: **HEURÍSTICA**.
 
-Filtro pre-partido inicial:
+Filtro pre-partido inicial v2:
 
 ```text
 favorite_decimal_odds <= 1.55
 AND favorite_normalized_probability >= 0.60
 ```
+
+Utilizar preferentemente la mediana de al menos tres bookmakers con mercado 1X2 completo. Una casa específica podrá configurarse como alternativa cuando no exista consenso suficiente.
 
 Activación del episodio candidato:
 
@@ -516,17 +518,20 @@ AND minute >= 45
 
 No se establece minuto máximo: el episodio continúa en minutos avanzados y tiempo añadido mientras el favorito siga perdiendo.
 
-Primera regla de presión:
+Regla de presión v2:
 
 ```text
 favorite_not_disadvantaged_by_red_card = TRUE
 AND (
     favorite_sot_last_10 >= 2
     OR (
-        favorite_shots_last_10 >= 4
-        AND favorite_corners_last_10 >= 2
+        favorite_sot_last_10 >= 1
+        AND favorite_shots_last_10 >= 3
+        AND favorite_corners_last_10 >= 1
     )
 )
+AND favorite_shots_last_10 >= opponent_shots_last_10
+AND favorite_sot_last_10 >= opponent_sot_last_10
 ```
 
 La posesión se registra como contexto, pero no será una condición obligatoria en v1 porque puede representar control estéril.
@@ -534,6 +539,8 @@ La posesión se registra como contexto, pero no será una condición obligatoria
 Los partidos elegibles deben comenzar a almacenar snapshots como máximo desde el minuto 35 para disponer de una ventana de 10 minutos cuando el candidato pueda activarse al minuto 45.
 
 Estos umbrales no son válidos por intuición. Deben evaluarse mediante backtesting y conservar la clasificación `HEURÍSTICA` hasta obtener evidencia suficiente.
+
+Cuando el trigger se produce tan tarde que el partido termina antes de completar el horizonte de 10 minutos, una ausencia de gol se marcará como observación censurada, no como falso resultado negativo. Si el favorito marca antes del final, la etiqueta sí será positiva.
 
 ---
 

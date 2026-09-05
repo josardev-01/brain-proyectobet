@@ -9,12 +9,13 @@ from brain_projectbet.domain.models import MatchSnapshot
 
 @dataclass(frozen=True, slots=True)
 class FavoritePressurePolicy:
-    version: int = 1
+    version: int = 2
     status: str = "HEURÍSTICA"
     window_minutes: int = 10
     minimum_shots_on_target: int = 2
-    minimum_shots: int = 4
-    minimum_corners: int = 2
+    minimum_combined_shots_on_target: int = 1
+    minimum_shots: int = 3
+    minimum_corners: int = 1
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,17 +51,31 @@ def evaluate_favorite_pressure(
         shots = window.deltas[f"shots_{favorite_suffix}"]
         shots_on_target = window.deltas[f"shots_on_target_{favorite_suffix}"]
         corners = window.deltas[f"corners_{favorite_suffix}"]
+        opponent_shots = window.deltas[f"shots_{opponent_suffix}"]
+        opponent_shots_on_target = window.deltas[f"shots_on_target_{opponent_suffix}"]
         pressure_met = (
             shots_on_target is not None
             and shots_on_target >= policy.minimum_shots_on_target
         ) or (
-            shots is not None
+            shots_on_target is not None
+            and shots_on_target >= policy.minimum_combined_shots_on_target
+            and shots is not None
             and shots >= policy.minimum_shots
             and corners is not None
             and corners >= policy.minimum_corners
         )
         if not pressure_met:
             reasons.append("pressure_threshold_not_met")
+        relative_dominance_met = (
+            shots is not None
+            and opponent_shots is not None
+            and shots >= opponent_shots
+            and shots_on_target is not None
+            and opponent_shots_on_target is not None
+            and shots_on_target >= opponent_shots_on_target
+        )
+        if not relative_dominance_met:
+            reasons.append("favorite_not_dominant_in_window")
 
     return AlertDecision(
         rule_id="favorite_losing_pressure",

@@ -112,3 +112,16 @@ Etiqueta: true
 ```
 
 Este caso demuestra que el pipeline puede enlazar odds, marcador, snapshots, equipo favorito y evento futuro. Sigue siendo una observación `EXPERIMENTAL`; no valida todavía una fórmula predictiva ni los umbrales de presión.
+
+### Consenso de odds aplicado posteriormente
+
+La respuesta guardada contenía seis bookmakers con mercado 1X2 completo. La mediana fue:
+
+```text
+Local: 6.795
+Empate: 4.85
+Visitante: 1.41
+Probabilidad normalizada de Celtic: 66.75%
+```
+
+El consenso confirma la clasificación de favorito y reduce dependencia de Bet365. La ventana 45–55 describe lo ocurrido durante esos diez minutos, pero no debe reutilizarse como variable de un trigger al minuto 45; hacerlo introduciría fuga temporal.
