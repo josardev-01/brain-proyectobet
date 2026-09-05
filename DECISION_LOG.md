@@ -47,3 +47,19 @@
 **Motivo:** Las odds de distintas casas no tienen idéntica calidad predictiva; el consenso reduce dependencia de un valor aislado. Los tiros a puerta representan amenaza más directa que volumen estéril. Marcador, tiempo restante, eventos recientes y tarjetas son variables dinámicas relevantes para predicción en juego.
 
 **Impacto:** La regla pasa a versión 2 pero permanece `HEURÍSTICA`. El backtesting deberá comparar v1 y v2 por precision, recall y lift, agrupando observaciones por partido para evitar tratar minutos correlacionados como muestras independientes.
+
+## DEC-009 — Descubrimiento y monitoreo automático con presupuesto de API
+
+**Problema:** Detectar favoritos claros antes del partido y seguirlos en vivo sin agotar la cuota diaria del proveedor ni consultar estadísticas de encuentros irrelevantes.
+
+**Opciones:**
+
+- Consultar todos los partidos y sus estadísticas durante toda la jornada.
+- Descubrir candidatos pre-partido y consultar individualmente solo los elegibles que estén en vivo.
+- Limitar el producto a una lista fija de equipos o ligas.
+
+**Decisión:** Crear un registro diario de elegibles a partir del consenso 1X2 y usar una única consulta global de partidos en vivo por ciclo. Solo desde el minuto 35 se consultarán estadísticas de encuentros presentes en ese registro, con un máximo configurable de dos partidos por ciclo y una reserva diaria predeterminada de 15 solicitudes. La alerta se deduplica por fixture, objetivo y versión de regla.
+
+**Motivo:** El filtrado temprano concentra la cuota en partidos útiles, permite precalentar la ventana antes del minuto 45 y evita spam cuando una condición permanece activa. Mantener objetivos y reglas versionados conserva la posibilidad de incorporar otros eventos en el futuro.
+
+**Impacto:** El descubrimiento predeterminado lee como máximo tres páginas y, por tanto, es una muestra parcial cuando el proveedor reporta más páginas. Esa limitación debe conservarse en los resultados y no se puede presentar como cobertura total. La estrategia permanece `EXPERIMENTAL` hasta definir ligas prioritarias, medir cobertura y completar backtesting.

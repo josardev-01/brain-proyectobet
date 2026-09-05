@@ -108,6 +108,9 @@ def extract_consensus_match_winner_odds(
 ) -> tuple[PrematchOdds, int]:
     markets: list[dict[str, float]] = []
     for entry in odds_response.get("response", []):
+        entry_fixture_id = str(entry.get("fixture", {}).get("id", fixture_id))
+        if entry_fixture_id != str(fixture_id):
+            continue
         for bookmaker in entry.get("bookmakers", []):
             for bet in bookmaker.get("bets", []):
                 if bet.get("name") != "Match Winner":

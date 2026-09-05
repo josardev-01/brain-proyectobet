@@ -52,3 +52,11 @@ class ApiFootballProbe:
             headers=self._headers,
         )
         return ProbeResponse(self.name, "prematch_odds", elapsed_ms, payload, headers)
+
+    def prematch_odds_by_date(self, date: str, *, page: int = 1) -> ProbeResponse:
+        payload, elapsed_ms, headers = get_json(
+            f"{self.base_url}/odds",
+            query={"date": date, "page": str(page)},
+            headers=self._headers,
+        )
+        return ProbeResponse(self.name, "prematch_odds_by_date", elapsed_ms, payload, headers)
