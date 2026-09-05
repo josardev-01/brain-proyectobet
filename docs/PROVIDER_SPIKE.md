@@ -65,3 +65,5 @@ Registrar por proveedor y partido:
 | Coste estimado para el MVP | Pendiente |
 
 No elegir proveedor hasta observar varios partidos y documentar campos ausentes por competición.
+
+Los resultados de cada ronda se consolidan en [`PROVIDER_SPIKE_RESULTS.md`](PROVIDER_SPIKE_RESULTS.md). Las respuestas crudas permanecen fuera de Git.
