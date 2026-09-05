@@ -19,6 +19,17 @@ class AlertEvent:
     minute_extra: int | None
     score_favorite: int
     score_opponent: int
+    objective_id: str = ""
+    objective_version: int = 1
+    rule_status: str = "HEURÍSTICA"
+    home_team_name: str = ""
+    away_team_name: str = ""
+    favorite_team_name: str = ""
+    favorite_odds: float | None = None
+    favorite_probability: float | None = None
+    shots_10m: int | float | None = None
+    shots_on_target_10m: int | float | None = None
+    corners_10m: int | float | None = None
 
 
 def trigger_once_alert_id(
