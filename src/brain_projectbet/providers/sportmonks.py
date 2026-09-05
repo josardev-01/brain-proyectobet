@@ -14,18 +14,18 @@ class SportMonksProbe:
         self._token = api_token
 
     def live_matches(self) -> ProbeResponse:
-        payload, elapsed_ms = get_json(
+        payload, elapsed_ms, headers = get_json(
             f"{self.base_url}/livescores/inplay",
             query={
                 "api_token": self._token,
                 "include": "participants;scores;statistics;events",
             },
         )
-        return ProbeResponse(self.name, "live_matches", elapsed_ms, payload)
+        return ProbeResponse(self.name, "live_matches", elapsed_ms, payload, headers)
 
     def prematch_odds(self, fixture_id: str) -> ProbeResponse:
-        payload, elapsed_ms = get_json(
+        payload, elapsed_ms, headers = get_json(
             f"{self.base_url}/odds/pre-match/fixtures/{fixture_id}",
             query={"api_token": self._token},
         )
-        return ProbeResponse(self.name, "prematch_odds", elapsed_ms, payload)
+        return ProbeResponse(self.name, "prematch_odds", elapsed_ms, payload, headers)

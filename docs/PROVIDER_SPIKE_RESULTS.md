@@ -62,3 +62,20 @@ Latencias adicionales:
 ### Siguiente captura requerida
 
 Ejecutar el mismo ciclo sobre varios partidos y conservar al menos un snapshot por minuto. Para etiquetar `favorite_goal_within_10m`, registrar los eventos disponibles exactamente 10 minutos después de cada instante candidato, evitando usar información futura en las variables.
+
+## Validación del recolector controlado
+
+Se ejecutó un ciclo adicional sobre el fixture 1556663:
+
+```text
+Minuto: 45
+Estado: HT
+Marcador: 1-0
+Favorito: away (Celtic)
+Probabilidad normalizada: 66.59%
+Precondición favorito perdiendo: true
+Ventanas disponibles: ninguna; todavía falta historia suficiente
+Solicitudes restantes informadas: 7
+```
+
+El recolector se detuvo al quedar por debajo del margen de seguridad de 10 solicitudes. No se deben realizar nuevas capturas hasta que la cuota se restablezca o se confirme un límite superior.

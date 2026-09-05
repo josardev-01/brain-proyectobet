@@ -10,6 +10,16 @@ class ProbeResponse:
     operation: str
     elapsed_ms: float
     payload: Mapping[str, Any]
+    response_headers: Mapping[str, str]
+
+    def remaining_requests(self) -> int | None:
+        for name, value in self.response_headers.items():
+            if name.lower() in {"x-ratelimit-requests-remaining", "x-ratelimit-remaining"}:
+                try:
+                    return int(value)
+                except ValueError:
+                    return None
+        return None
 
 
 class FootballDataProbe(Protocol):

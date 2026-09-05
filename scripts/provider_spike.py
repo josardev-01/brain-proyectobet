@@ -59,6 +59,7 @@ def main() -> int:
         "provider": result.provider,
         "operation": result.operation,
         "elapsed_ms": round(result.elapsed_ms, 2),
+        "remaining_requests": result.remaining_requests(),
         "output": str(output_path),
     }, ensure_ascii=False))
     return 0

@@ -49,6 +49,27 @@ python scripts/provider_spike.py sportmonks odds --fixture-id ID
 
 Las respuestas se guardan en `data/raw/provider-spike/`, fuera del control de versiones. No deben contener nuestras claves, aunque sí pueden contener datos sujetos a las condiciones del proveedor; no publicarlas sin revisar la licencia aplicable.
 
+## Recolección temporal controlada
+
+Una vez identificado un fixture y un bookmaker con mercado 1X2:
+
+```powershell
+$env:PYTHONPATH = "src"
+python scripts/collect_fixture.py --fixture-id ID --bookmaker Bet365 --cycles 1
+```
+
+Para una serie real, aumenta `--cycles` y conserva el intervalo predeterminado de 60 segundos. Cada ciclo consume dos solicitudes después de la consulta inicial de odds. El proceso se detiene si termina el partido o si la cuota restante alcanza `--minimum-remaining`.
+
+Ejemplo de 16 capturas:
+
+```powershell
+python scripts/collect_fixture.py --fixture-id ID --bookmaker Bet365 --cycles 16 --interval-seconds 60 --minimum-remaining 10
+```
+
+Los snapshots se guardan como JSON Lines en `data/raw/snapshots/`. Las ventanas solo se consideran disponibles cuando existe un snapshot de referencia suficientemente antiguo; una corrección decreciente del proveedor produce `null`, no actividad negativa.
+
+El etiquetador mantiene el resultado en `null` hasta observar por completo el horizonte futuro. Los minutos añadidos todavía requieren timestamps o secuencias de eventos más precisas para desambiguar triggers dentro del mismo minuto 45/90; no usar esos casos para validar el modelo hasta resolverlo.
+
 ## Matriz de evaluación
 
 Registrar por proveedor y partido:
