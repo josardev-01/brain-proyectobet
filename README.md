@@ -44,6 +44,9 @@ Flujo actual:
 $env:PYTHONPATH = "src"
 python scripts/discover_candidates.py --date AAAA-MM-DD
 python scripts/monitor_candidates.py --cycles 1
+python scripts/finalize_matches.py --registry data/raw/eligible/AAAA-MM-DD.json
+python scripts/summarize_backtests.py
+python scripts/send_pending_alerts.py --dry-run
 ```
 
-El primero registra favoritos claros mediante consenso de al menos tres casas. El segundo consulta estadísticas solo cuando esos partidos están en vivo desde el minuto 35, evalúa la heurística v2 y guarda alertas sin duplicarlas.
+El flujo descubre favoritos claros, monitorea únicamente los escenarios relevantes, finaliza partidos con eventos exactos, registra resultados para backtesting y conserva las alertas en una bandeja entregable por Telegram.

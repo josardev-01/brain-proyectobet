@@ -115,6 +115,10 @@ def main() -> int:
                 window = derive_window(load_snapshots(snapshot_path), window_minutes=10)
                 decision = evaluate_favorite_pressure(candidate, snapshot, window)
                 if decision.should_alert:
+                    favorite_suffix = "home" if candidate.favorite_side == "home" else "away"
+                    team_names = (snapshot.raw_metadata or {}).get("team_names", {})
+                    home_name = str(team_names.get("home", {}).get("name", ""))
+                    away_name = str(team_names.get("away", {}).get("name", ""))
                     alert = AlertEvent(
                         alert_id=trigger_once_alert_id(
                             candidate,
@@ -131,6 +135,19 @@ def main() -> int:
                         minute_extra=candidate.minute_extra,
                         score_favorite=candidate.score_favorite,
                         score_opponent=candidate.score_opponent,
+                        objective_id=candidate.objective_id,
+                        objective_version=candidate.objective_version,
+                        rule_status=decision.status,
+                        home_team_name=home_name,
+                        away_team_name=away_name,
+                        favorite_team_name=home_name if favorite_suffix == "home" else away_name,
+                        favorite_odds=candidate.favorite_odds,
+                        favorite_probability=candidate.favorite_probability,
+                        shots_10m=window.deltas.get(f"shots_{favorite_suffix}") if window else None,
+                        shots_on_target_10m=(
+                            window.deltas.get(f"shots_on_target_{favorite_suffix}") if window else None
+                        ),
+                        corners_10m=window.deltas.get(f"corners_{favorite_suffix}") if window else None,
                     )
                     alert_saved = append_alert_once(Path("data/raw/alerts.jsonl"), alert)
             cycle_results.append({

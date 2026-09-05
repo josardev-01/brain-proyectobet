@@ -127,6 +127,33 @@ El replay recorre los snapshots cronológicamente. Para cada decisión, la regla
 
 Un resultado `outcome: null` es desconocido o censurado, no un fallo de la regla. No debe convertirse en `false` al calcular métricas.
 
+El cierre de todos los partidos elegibles que ya deberían haber terminado se automatiza así:
+
+```powershell
+python scripts/finalize_matches.py --registry data/raw/eligible/AAAA-MM-DD.json --daily-reserve 15
+python scripts/summarize_backtests.py
+```
+
+El finalizador consulta primero el estado del fixture. Solo para `FT`, `AET` o `PEN` descarga los eventos, añade el estado terminal a la serie, ejecuta el replay y escribe un resultado deduplicado en `data/raw/backtesting/results.jsonl`. Por defecto espera 105 minutos desde el inicio previsto y procesa como máximo tres fixtures por ejecución.
+
+El resumen calcula precisión únicamente sobre alertas con resultado observable. Mientras no exista una población completa de oportunidades etiquetadas, `recall`, `F1` y `lift` se mantienen en `null` deliberadamente.
+
+## Entrega por Telegram
+
+Las alertas se guardan primero como una bandeja local. Para revisar mensajes pendientes sin enviarlos:
+
+```powershell
+python scripts/send_pending_alerts.py --dry-run
+```
+
+La entrega real requiere completar `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` en `.env` y ejecutar:
+
+```powershell
+python scripts/send_pending_alerts.py
+```
+
+Cada envío confirmado crea un recibo en `data/raw/notifications/receipts.jsonl`. Un fallo conserva la alerta como pendiente para reintentarla; una ejecución repetida no vuelve a enviar entregas ya confirmadas al mismo destino.
+
 ## Matriz de evaluación
 
 Registrar por proveedor y partido:

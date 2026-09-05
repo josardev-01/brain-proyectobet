@@ -59,3 +59,16 @@ def append_alert_once(path: Path, alert: AlertEvent) -> bool:
         stream.write(json.dumps(asdict(alert), ensure_ascii=False, default=_json_default))
         stream.write("\n")
     return True
+
+
+def load_alerts(path: Path) -> list[AlertEvent]:
+    if not path.exists():
+        return []
+    alerts = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        item = json.loads(line)
+        item["created_at"] = datetime.fromisoformat(item["created_at"])
+        alerts.append(AlertEvent(**item))
+    return alerts

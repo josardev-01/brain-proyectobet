@@ -79,3 +79,23 @@
 **Motivo:** Mantiene causalidad temporal, coincide con la deduplicación del monitor y permite comparar versiones de reglas sobre exactamente la misma evidencia.
 
 **Impacto:** Los resultados del replay no validan la heurística por sí solos; requieren una muestra de partidos terminados y eventos completos. Los tiempos añadidos se comparan mediante los campos `elapsed` y `extra`, pero deberán migrar a timestamps del proveedor si se detectan ambigüedades de cambio de periodo.
+
+## DEC-011 — Finalización post-partido y métricas disponibles
+
+**Problema:** Los snapshots y alertas en vivo no bastan para medir una regla si después no se recupera el resultado final y los eventos exactos del partido.
+
+**Decisión:** Un finalizador revisa fixtures elegibles con antigüedad mínima configurable, procesa únicamente estados con resultado (`FT`, `AET`, `PEN`), conserva la respuesta final y los eventos crudos, añade un snapshot terminal, ejecuta el replay y guarda un registro deduplicado por fixture, objetivo y versión de regla.
+
+**Motivo:** Cierra el ciclo observación → resultado → evidencia sin mezclar formatos del proveedor con la regla ni volver a contar un partido al repetir el proceso.
+
+**Impacto:** El resumen inicial informa cobertura, candidatos, alertas resueltas y precisión. `recall`, `F1` y `lift` permanecen sin valor hasta construir una población completa de oportunidades etiquetadas; no se derivarán artificialmente solo de las alertas emitidas. Los resultados continúan clasificados como `EXPERIMENTAL`.
+
+## DEC-012 — Bandeja de alertas y entrega desacoplada
+
+**Problema:** Enviar a Telegram directamente desde el motor puede perder una alerta si la red falla después de evaluarla o duplicarla durante un reintento.
+
+**Decisión:** El monitor persiste primero un `AlertEvent` explicable. Un proceso independiente lee alertas pendientes, usa un adaptador Telegram y registra un recibo deduplicado por alerta, canal y destino. Solo después de una respuesta satisfactoria se considera entregada.
+
+**Motivo:** Separa decisión estadística de efectos externos, permite reintentos seguros y deja preparado el sistema para otros canales.
+
+**Impacto:** La recolección y el backtesting funcionan sin credenciales de Telegram. Activar entregas reales requiere `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`; los secretos permanecen exclusivamente en `.env`.
