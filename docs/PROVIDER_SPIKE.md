@@ -58,7 +58,9 @@ $env:PYTHONPATH = "src"
 python scripts/collect_fixture.py --fixture-id ID --bookmaker Bet365 --cycles 1
 ```
 
-Para una serie real, aumenta `--cycles` y conserva el intervalo predeterminado de 60 segundos. Cada ciclo consume dos solicitudes después de la consulta inicial de odds. El proceso se detiene si termina el partido o si la cuota restante alcanza `--minimum-remaining`.
+Para una serie real, aumenta `--cycles` y conserva el intervalo predeterminado de 60 segundos. Cada ciclo consume dos solicitudes después de la consulta inicial de odds. El proceso se detiene si termina el partido o si la cuota diaria restante alcanza `--minimum-remaining`.
+
+API-Football informa dos límites distintos. `x-ratelimit-requests-remaining` corresponde al día y `X-RateLimit-Remaining` al minuto. Deben registrarse por separado: el primero protege el presupuesto total; el segundo controla la velocidad de llamadas.
 
 Ejemplo de 16 capturas:
 

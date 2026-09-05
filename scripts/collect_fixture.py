@@ -67,6 +67,9 @@ def main() -> int:
         append_snapshot(output, snapshot)
         favorite_score = snapshot.score_home if favorite_side == "home" else snapshot.score_away
         opponent_score = snapshot.score_away if favorite_side == "home" else snapshot.score_home
+        favorite_team_id = (
+            snapshot.home_team_id if favorite_side == "home" else snapshot.away_team_id
+        )
         precondition_met = (
             favorite_score is not None
             and opponent_score is not None
@@ -77,13 +80,20 @@ def main() -> int:
             str(minutes): derive_window(snapshots, window_minutes=minutes)
             for minutes in (3, 5, 10, 15)
         }
-        remaining_values = [
+        daily_remaining_values = [
             value for value in (
-                fixture_response.remaining_requests(),
-                statistics_response.remaining_requests(),
+                fixture_response.rate_limits().daily_remaining,
+                statistics_response.rate_limits().daily_remaining,
             ) if value is not None
         ]
-        remaining = min(remaining_values) if remaining_values else None
+        minute_remaining_values = [
+            value for value in (
+                fixture_response.rate_limits().minute_remaining,
+                statistics_response.rate_limits().minute_remaining,
+            ) if value is not None
+        ]
+        daily_remaining = min(daily_remaining_values) if daily_remaining_values else None
+        minute_remaining = min(minute_remaining_values) if minute_remaining_values else None
         print(json.dumps({
             "cycle": cycle,
             "fixture_id": args.fixture_id,
@@ -91,19 +101,23 @@ def main() -> int:
             "status": snapshot.status,
             "score": [snapshot.score_home, snapshot.score_away],
             "favorite_side": favorite_side,
+            "favorite_team_id": favorite_team_id,
             "favorite_probability": round(probabilities[0 if favorite_side == 'home' else 2], 4),
             "precondition_met": precondition_met,
             "windows_ready": [key for key, value in windows.items() if value is not None],
-            "remaining_requests": remaining,
+            "daily_remaining": daily_remaining,
+            "minute_remaining": minute_remaining,
             "output": str(output),
         }, ensure_ascii=False))
-        if remaining is not None and remaining <= args.minimum_remaining:
-            print("Recolección detenida para preservar la cuota de solicitudes.")
+        if daily_remaining is not None and daily_remaining <= args.minimum_remaining:
+            print("Recolección detenida para preservar la cuota diaria de solicitudes.")
             break
         if snapshot.status in {"FT", "AET", "PEN", "PST", "CANC", "ABD", "AWD", "WO"}:
             print("Recolección detenida porque el partido ya no está activo.")
             break
         if cycle < args.cycles:
+            if minute_remaining is not None and minute_remaining <= 1:
+                print("Límite por minuto cercano; se conserva el intervalo antes del siguiente ciclo.")
             time.sleep(args.interval_seconds)
     return 0
 
