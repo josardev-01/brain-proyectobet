@@ -10,7 +10,7 @@ from brain_projectbet.backtesting.replay import replay_first_alert
 from brain_projectbet.collection.storage import load_snapshots
 from brain_projectbet.discovery.storage import load_eligible_fixtures
 from brain_projectbet.domain.models import PrematchOdds
-from brain_projectbet.domain.objectives import FAVORITE_GOAL_WITHIN_10M_V1
+from brain_projectbet.strategies.config import DEFAULT_STRATEGY_PATH, load_strategy
 
 
 def main() -> int:
@@ -23,6 +23,7 @@ def main() -> int:
     )
     parser.add_argument("--events", type=Path, required=True)
     parser.add_argument("--snapshots", type=Path)
+    parser.add_argument("--strategy", type=Path, default=DEFAULT_STRATEGY_PATH)
     args = parser.parse_args()
 
     registered = next(
@@ -43,7 +44,15 @@ def main() -> int:
         draw=registered.median_draw_odds,
         away=registered.median_away_odds,
     )
-    result = replay_first_alert(snapshots, odds, FAVORITE_GOAL_WITHIN_10M_V1, events)
+    strategy = load_strategy(args.strategy)
+    result = replay_first_alert(
+        snapshots,
+        odds,
+        strategy.objective,
+        events,
+        candidate_policy=strategy.candidate_policy,
+        pressure_policy=strategy.pressure_policy,
+    )
     print(json.dumps(asdict(result), ensure_ascii=False))
     return 0
 

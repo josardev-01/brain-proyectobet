@@ -17,6 +17,10 @@ estado: HEURÍSTICA
 
 El objetivo no está integrado en los clientes de proveedores. `TargetEvent` y `ObjectiveDefinition` permiten cambiar evento, sujeto, horizonte y precondiciones sin modificar la capa de adquisición.
 
+La estrategia ejecutable completa está en `config/strategies/favorite_losing_pressure_v2.json`. Allí se definen también el filtro de cuota/probabilidad, minutos de calentamiento y activación, ventana y umbrales de presión. Todos los comandos aceptan `--strategy RUTA`.
+
+Una estrategia ya usada para producir resultados es inmutable. Para experimentar, copiar el archivo, incrementar `version` y cambiar sus parámetros; no editar silenciosamente la versión anterior. Incorporar otro tipo de evento no modifica proveedor ni normalización, pero sí requiere un evaluador y etiquetador apropiados para ese evento.
+
 ## Datos mínimos que se deben verificar
 
 1. Identificadores estables de partido, competición y equipos.
@@ -105,6 +109,12 @@ python scripts/monitor_candidates.py --cycles 1 --maximum-matches 3 --daily-rese
 ```
 
 Cada ciclo consume una consulta global, una consulta inicial por partido al crear su línea base y después una consulta por favorito que esté perdiendo. El proceso conserva una reserva diaria y no emite más de una alerta por combinación de partido, objetivo y versión de regla. Conviene usar intervalos que permitan obtener diferencias reales de 10 minutos; si falta una captura, el motor rechaza la ventana desalineada en lugar de tratarla como válida.
+
+Para probar otra versión sin cambiar el código:
+
+```powershell
+python scripts/monitor_candidates.py --strategy config/strategies/MI_ESTRATEGIA.json --cycles 1
+```
 
 Archivos locales generados, todos excluidos de Git:
 

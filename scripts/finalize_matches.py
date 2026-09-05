@@ -17,10 +17,9 @@ from brain_projectbet.backtesting.storage import append_backtest_once, load_back
 from brain_projectbet.collection.storage import append_snapshot, load_snapshots
 from brain_projectbet.discovery.storage import load_eligible_fixtures
 from brain_projectbet.domain.models import PrematchOdds
-from brain_projectbet.domain.objectives import FAVORITE_GOAL_WITHIN_10M_V1
 from brain_projectbet.normalization.api_football import normalize_snapshot
 from brain_projectbet.providers.api_football import ApiFootballProbe
-from brain_projectbet.rules.favorite_pressure import FavoritePressurePolicy
+from brain_projectbet.strategies.config import DEFAULT_STRATEGY_PATH, load_strategy
 
 
 RESULT_STATUSES = {"FT", "AET", "PEN"}
@@ -47,6 +46,7 @@ def main() -> int:
     parser.add_argument("--daily-reserve", type=int, default=15)
     parser.add_argument("--minimum-age-minutes", type=int, default=105)
     parser.add_argument("--maximum-fixtures", type=int, default=3)
+    parser.add_argument("--strategy", type=Path, default=DEFAULT_STRATEGY_PATH)
     args = parser.parse_args()
     if args.minimum_age_minutes < 0 or args.maximum_fixtures <= 0:
         parser.error("minimum-age-minutes no puede ser negativo y maximum-fixtures debe ser positivo")
@@ -57,8 +57,10 @@ def main() -> int:
     probe = ApiFootballProbe(os.getenv("API_FOOTBALL_KEY", ""))
     fixtures = load_eligible_fixtures(args.registry)
     existing_ids = {record.record_id for record in load_backtests(args.results)}
-    objective = FAVORITE_GOAL_WITHIN_10M_V1
-    rule = FavoritePressurePolicy()
+    strategy = load_strategy(args.strategy)
+    objective = strategy.objective
+    candidate_policy = strategy.candidate_policy
+    rule = strategy.pressure_policy
     now = datetime.now(UTC)
     processed = []
     daily_remaining = None
@@ -72,7 +74,7 @@ def main() -> int:
             fixture_id=fixture.fixture_id,
             objective_id=objective.objective_id,
             objective_version=objective.version,
-            rule_id="favorite_losing_pressure",
+            rule_id=rule.rule_id,
             rule_version=rule.version,
         ) not in existing_ids
     ][: args.maximum_fixtures]
@@ -124,13 +126,20 @@ def main() -> int:
             draw=registered.median_draw_odds,
             away=registered.median_away_odds,
         )
-        replay = replay_first_alert(snapshots, odds, objective, events)
+        replay = replay_first_alert(
+            snapshots,
+            odds,
+            objective,
+            events,
+            candidate_policy=candidate_policy,
+            pressure_policy=rule,
+        )
         record = build_backtest_record(
             registered,
             replay,
             objective_id=objective.objective_id,
             objective_version=objective.version,
-            rule_id="favorite_losing_pressure",
+            rule_id=rule.rule_id,
             rule_version=rule.version,
             rule_status=rule.status,
             match_status=match_status,
@@ -150,6 +159,8 @@ def main() -> int:
     summary = summarize_backtests(load_backtests(args.results))
     print(json.dumps({
         "due": len(due),
+        "strategy_id": strategy.strategy_id,
+        "strategy_version": strategy.version,
         "processed": processed,
         "daily_remaining": daily_remaining,
         "summary": asdict(summary),

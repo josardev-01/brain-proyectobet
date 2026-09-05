@@ -17,6 +17,16 @@ class CandidatePolicy:
     minimum_minute: int = 45
     warmup_minute: int = 35
 
+    def __post_init__(self) -> None:
+        if self.maximum_favorite_odds <= 1:
+            raise ValueError("maximum_favorite_odds debe ser mayor que 1")
+        if not 0 < self.minimum_favorite_probability <= 1:
+            raise ValueError("minimum_favorite_probability debe estar entre 0 y 1")
+        if self.minimum_minute < 0 or self.warmup_minute < 0:
+            raise ValueError("los minutos no pueden ser negativos")
+        if self.warmup_minute > self.minimum_minute:
+            raise ValueError("warmup_minute no puede superar minimum_minute")
+
 
 @dataclass(frozen=True, slots=True)
 class CandidateObservation:
