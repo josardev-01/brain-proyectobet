@@ -16,13 +16,13 @@ from brain_projectbet.collection.storage import (
 )
 from brain_projectbet.discovery.storage import load_eligible_fixtures
 from brain_projectbet.domain.alerts import AlertEvent, trigger_once_alert_id
-from brain_projectbet.domain.candidates import CandidatePolicy, observe_candidate
+from brain_projectbet.domain.candidates import observe_candidate
 from brain_projectbet.domain.models import PrematchOdds
-from brain_projectbet.domain.objectives import FAVORITE_GOAL_WITHIN_10M_V1
 from brain_projectbet.monitoring.selection import needs_statistics_sample, select_live_eligible
 from brain_projectbet.normalization.api_football import normalize_snapshot
 from brain_projectbet.providers.api_football import ApiFootballProbe
 from brain_projectbet.rules.favorite_pressure import evaluate_favorite_pressure
+from brain_projectbet.strategies.config import DEFAULT_STRATEGY_PATH, load_strategy
 
 
 def load_dotenv(path: Path) -> None:
@@ -42,6 +42,7 @@ def main() -> int:
     parser.add_argument("--interval-seconds", type=int, default=120)
     parser.add_argument("--maximum-matches", type=int, default=3)
     parser.add_argument("--daily-reserve", type=int, default=15)
+    parser.add_argument("--strategy", type=Path, default=DEFAULT_STRATEGY_PATH)
     args = parser.parse_args()
     if args.cycles <= 0 or args.interval_seconds <= 0 or args.maximum_matches <= 0:
         parser.error("cycles, interval-seconds y maximum-matches deben ser positivos")
@@ -51,7 +52,10 @@ def main() -> int:
     load_dotenv(Path(".env"))
     probe = ApiFootballProbe(os.getenv("API_FOOTBALL_KEY", ""))
     eligible = load_eligible_fixtures(args.registry)
-    policy = CandidatePolicy()
+    strategy = load_strategy(args.strategy)
+    policy = strategy.candidate_policy
+    objective = strategy.objective
+    pressure_policy = strategy.pressure_policy
 
     for cycle in range(1, args.cycles + 1):
         live = probe.live_matches()
@@ -103,7 +107,7 @@ def main() -> int:
             candidate = observe_candidate(
                 snapshot,
                 odds,
-                FAVORITE_GOAL_WITHIN_10M_V1,
+                objective,
                 policy=policy,
             )
             candidate_saved = False
@@ -112,8 +116,16 @@ def main() -> int:
             if candidate is not None:
                 candidate_path = Path("data/raw/candidates") / f"api-football-{registered.fixture_id}.jsonl"
                 candidate_saved = append_candidate_once(candidate_path, candidate)
-                window = derive_window(load_snapshots(snapshot_path), window_minutes=10)
-                decision = evaluate_favorite_pressure(candidate, snapshot, window)
+                window = derive_window(
+                    load_snapshots(snapshot_path),
+                    window_minutes=pressure_policy.window_minutes,
+                )
+                decision = evaluate_favorite_pressure(
+                    candidate,
+                    snapshot,
+                    window,
+                    policy=pressure_policy,
+                )
                 if decision.should_alert:
                     favorite_suffix = "home" if candidate.favorite_side == "home" else "away"
                     team_names = (snapshot.raw_metadata or {}).get("team_names", {})
@@ -167,6 +179,8 @@ def main() -> int:
 
         print(json.dumps({
             "cycle": cycle,
+            "strategy_id": strategy.strategy_id,
+            "strategy_version": strategy.version,
             "eligible_registered": len(eligible),
             "live_selected": len(selected),
             "statistics_selected": len(selected_for_statistics),

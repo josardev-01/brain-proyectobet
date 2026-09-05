@@ -1,0 +1,36 @@
+{
+  "strategy_id": "favorite_losing_pressure",
+  "version": 2,
+  "status": "HEURÍSTICA",
+  "objective": {
+    "objective_id": "favorite_goal_within_10m",
+    "version": 1,
+    "status": "HEURÍSTICA",
+    "target": {
+      "event_type": "goal",
+      "subject": "prematch_favorite",
+      "horizon_minutes": 10,
+      "attributes": {}
+    },
+    "preconditions": {
+      "prematch_favorite_is_losing": true
+    }
+  },
+  "candidate_policy": {
+    "maximum_favorite_odds": 1.55,
+    "minimum_favorite_probability": 0.6,
+    "minimum_minute": 45,
+    "warmup_minute": 35
+  },
+  "rule": {
+    "rule_id": "favorite_losing_pressure",
+    "type": "favorite_pressure",
+    "parameters": {
+      "window_minutes": 10,
+      "minimum_shots_on_target": 2,
+      "minimum_combined_shots_on_target": 1,
+      "minimum_shots": 3,
+      "minimum_corners": 1
+    }
+  }
+}

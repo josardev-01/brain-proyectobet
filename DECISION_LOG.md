@@ -99,3 +99,13 @@
 **Motivo:** Separa decisión estadística de efectos externos, permite reintentos seguros y deja preparado el sistema para otros canales.
 
 **Impacto:** La recolección y el backtesting funcionan sin credenciales de Telegram. Activar entregas reales requiere `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID`; los secretos permanecen exclusivamente en `.env`.
+
+## DEC-013 — Estrategias configurables y versionadas
+
+**Problema:** Aunque objetivo y políticas estaban representados por clases, los scripts seleccionaban constantes fijas. Cambiar umbrales exigía editar código y podía desalinear descubrimiento, monitoreo y backtesting.
+
+**Decisión:** Cada ejecución carga una estrategia JSON que reúne identidad, versión, estado estadístico, objetivo, política de candidatos, tipo de regla y parámetros. Todos los comandos del ciclo aceptan `--strategy` y usan por defecto `config/strategies/favorite_losing_pressure_v2.json`.
+
+**Motivo:** Garantiza que filtro pre-partido, ventana, trigger y replay usen la misma definición, y permite comparar nuevas versiones sin tocar adquisición ni normalización.
+
+**Impacto:** Una versión evaluada no debe editarse ni sobrescribirse; cualquier cambio de umbral requiere copiar la definición, incrementar la versión y conservar la anterior. El adaptador `favorite_pressure` actual admite específicamente el objetivo de gol del favorito pre-partido. Nuevos eventos como corners o tarjetas reutilizarán la infraestructura, pero deberán incorporar un evaluador y etiquetador compatibles.

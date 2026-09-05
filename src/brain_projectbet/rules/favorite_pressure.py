@@ -9,6 +9,7 @@ from brain_projectbet.domain.models import MatchSnapshot
 
 @dataclass(frozen=True, slots=True)
 class FavoritePressurePolicy:
+    rule_id: str = "favorite_losing_pressure"
     version: int = 2
     status: str = "HEURÍSTICA"
     window_minutes: int = 10
@@ -16,6 +17,22 @@ class FavoritePressurePolicy:
     minimum_combined_shots_on_target: int = 1
     minimum_shots: int = 3
     minimum_corners: int = 1
+
+    def __post_init__(self) -> None:
+        if not self.rule_id.strip():
+            raise ValueError("rule_id no puede estar vacío")
+        if self.version <= 0 or self.window_minutes <= 0:
+            raise ValueError("version y window_minutes deben ser positivos")
+        if self.status not in {"HEURÍSTICA", "EXPERIMENTAL", "VALIDADA"}:
+            raise ValueError("status estadístico no reconocido")
+        thresholds = (
+            self.minimum_shots_on_target,
+            self.minimum_combined_shots_on_target,
+            self.minimum_shots,
+            self.minimum_corners,
+        )
+        if any(value < 0 for value in thresholds):
+            raise ValueError("los umbrales de presión no pueden ser negativos")
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,7 +97,7 @@ def evaluate_favorite_pressure(
             reasons.append("favorite_not_dominant_in_window")
 
     return AlertDecision(
-        rule_id="favorite_losing_pressure",
+        rule_id=policy.rule_id,
         rule_version=policy.version,
         status=policy.status,
         should_alert=not reasons,

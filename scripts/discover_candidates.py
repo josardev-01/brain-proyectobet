@@ -9,6 +9,7 @@ from pathlib import Path
 from brain_projectbet.discovery.eligible import discover_eligible_fixtures
 from brain_projectbet.discovery.storage import save_eligible_fixtures
 from brain_projectbet.providers.api_football import ApiFootballProbe
+from brain_projectbet.strategies.config import DEFAULT_STRATEGY_PATH, load_strategy
 
 
 def load_dotenv(path: Path) -> None:
@@ -27,11 +28,13 @@ def main() -> int:
     parser.add_argument("--max-pages", type=int, default=3)
     parser.add_argument("--daily-reserve", type=int, default=15)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--strategy", type=Path, default=DEFAULT_STRATEGY_PATH)
     args = parser.parse_args()
     if args.max_pages <= 0:
         parser.error("max-pages debe ser positivo")
 
     load_dotenv(Path(".env"))
+    strategy = load_strategy(args.strategy)
     probe = ApiFootballProbe(os.getenv("API_FOOTBALL_KEY", ""))
     payloads = []
     daily_remaining = None
@@ -48,11 +51,17 @@ def main() -> int:
             break
 
     discovered_at = datetime.now(UTC)
-    result = discover_eligible_fixtures(payloads, discovered_at=discovered_at)
+    result = discover_eligible_fixtures(
+        payloads,
+        discovered_at=discovered_at,
+        policy=strategy.candidate_policy,
+    )
     output = args.output or Path("data/raw/eligible") / f"{args.date}.json"
     save_eligible_fixtures(output, result.eligible)
     print(json.dumps({
         "date": args.date,
+        "strategy_id": strategy.strategy_id,
+        "strategy_version": strategy.version,
         "pages_read": len(payloads),
         "total_pages_reported": total_pages,
         "fixtures_evaluated": result.fixtures_evaluated,
