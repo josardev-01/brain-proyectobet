@@ -22,6 +22,7 @@ No se considera validada ninguna fórmula o regla hasta evaluarla mediante datos
 ## Documentación del proyecto
 
 - [`CEREBRO_ESTADISTICAS_FUTBOL.md`](CEREBRO_ESTADISTICAS_FUTBOL.md): principios, decisiones y dirección del producto.
+- [`DECISION_LOG.md`](DECISION_LOG.md): decisiones duraderas y su contexto.
 - [`.agents/skills/football-live-statistics/SKILL.md`](.agents/skills/football-live-statistics/SKILL.md): habilidad local para aplicar esos criterios durante el desarrollo.
 
 ## Stack previsto
@@ -32,3 +33,7 @@ No se considera validada ninguna fórmula o regla hasta evaluarla mediante datos
 - Notificaciones iniciales: Telegram.
 
 La implementación crecerá de manera incremental después de seleccionar el proveedor de datos.
+
+## Spike de proveedores
+
+El contrato extensible del objetivo inicial y los clientes exploratorios están documentados en [`docs/PROVIDER_SPIKE.md`](docs/PROVIDER_SPIKE.md).
