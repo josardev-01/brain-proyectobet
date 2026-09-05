@@ -63,3 +63,19 @@
 **Motivo:** El filtrado temprano concentra la cuota en partidos útiles, permite precalentar la ventana antes del minuto 45 y evita spam cuando una condición permanece activa. Mantener objetivos y reglas versionados conserva la posibilidad de incorporar otros eventos en el futuro.
 
 **Impacto:** El descubrimiento predeterminado lee como máximo tres páginas y, por tanto, es una muestra parcial cuando el proveedor reporta más páginas. Esa limitación debe conservarse en los resultados y no se puede presentar como cobertura total. La estrategia permanece `EXPERIMENTAL` hasta definir ligas prioritarias, medir cobertura y completar backtesting.
+
+## DEC-010 — Repetición temporal sin fuga de información
+
+**Problema:** Evaluar la heurística con datos guardados puede inflar artificialmente el resultado si una decisión usa snapshots o eventos que todavía no existían al momento de la alerta.
+
+**Opciones:**
+
+- Evaluar cada snapshot con la serie completa del partido.
+- Reproducir la serie en orden y separar datos de decisión de eventos usados como etiqueta.
+- Medir únicamente alertas emitidas en vivo, sin capacidad de repetir experimentos.
+
+**Decisión:** El motor de replay entrega a la regla solo el prefijo de snapshots disponible hasta cada observación. Al primer trigger del partido congela la decisión y usa los eventos posteriores exclusivamente para etiquetar el objetivo. La primera alerta es la unidad de evaluación del episodio.
+
+**Motivo:** Mantiene causalidad temporal, coincide con la deduplicación del monitor y permite comparar versiones de reglas sobre exactamente la misma evidencia.
+
+**Impacto:** Los resultados del replay no validan la heurística por sí solos; requieren una muestra de partidos terminados y eventos completos. Los tiempos añadidos se comparan mediante los campos `elapsed` y `extra`, pero deberán migrar a timestamps del proveedor si se detectan ambigüedades de cambio de periodo.
