@@ -98,13 +98,13 @@ python scripts/discover_candidates.py --date 2026-09-05 --max-pages 3 --daily-re
 
 La salida indica `pages_read` y `total_pages_reported`. Si son distintos, el registro tiene cobertura parcial y no representa toda la jornada. El límite de páginas protege la cuota del plan gratuito mientras se definen competiciones prioritarias.
 
-El monitor consulta primero la lista global de partidos en vivo y solicita estadísticas solo de los elegibles desde el minuto 35:
+El monitor consulta primero la lista global de partidos en vivo. Toma una línea base estadística de cada elegible desde el minuto 35 y luego vuelve a solicitar estadísticas solo mientras el favorito esté perdiendo desde el minuto 45:
 
 ```powershell
-python scripts/monitor_candidates.py --cycles 1 --maximum-matches 2 --daily-reserve 15
+python scripts/monitor_candidates.py --cycles 1 --maximum-matches 3 --daily-reserve 15
 ```
 
-Para mantenerlo activo durante una franja de dos horas, por ejemplo, pueden usarse 60 ciclos con intervalo de 120 segundos. Cada ciclo consume una consulta global y hasta `maximum-matches` consultas de estadísticas; el gasto real disminuye cuando no hay elegibles en vivo. El proceso conserva una reserva diaria y no emite más de una alerta por combinación de partido, objetivo y versión de regla.
+Cada ciclo consume una consulta global, una consulta inicial por partido al crear su línea base y después una consulta por favorito que esté perdiendo. El proceso conserva una reserva diaria y no emite más de una alerta por combinación de partido, objetivo y versión de regla. Conviene usar intervalos que permitan obtener diferencias reales de 10 minutos; si falta una captura, el motor rechaza la ventana desalineada en lugar de tratarla como válida.
 
 Archivos locales generados, todos excluidos de Git:
 

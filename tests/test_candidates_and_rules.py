@@ -129,6 +129,22 @@ class FavoritePressureRuleTests(unittest.TestCase):
         self.assertFalse(decision.should_alert)
         self.assertIn("insufficient_window_history", decision.reasons)
 
+    def test_does_not_treat_longer_delta_as_ten_minute_window(self) -> None:
+        current = snapshot()
+        candidate = observe_candidate(current, odds(), FAVORITE_GOAL_WITHIN_10M_V1)
+        mismatched = window()
+        mismatched = WindowFeatures(
+            provider_match_id=mismatched.provider_match_id,
+            from_minute=75,
+            to_minute=90,
+            requested_window_minutes=10,
+            actual_window_minutes=15,
+            deltas=mismatched.deltas,
+        )
+        decision = evaluate_favorite_pressure(candidate, current, mismatched)
+        self.assertFalse(decision.should_alert)
+        self.assertIn("window_duration_mismatch", decision.reasons)
+
     def test_does_not_alert_when_favorite_has_red_card_disadvantage(self) -> None:
         current = snapshot(away_red=1)
         candidate = observe_candidate(current, odds(), FAVORITE_GOAL_WITHIN_10M_V1)

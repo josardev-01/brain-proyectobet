@@ -39,6 +39,8 @@ def evaluate_favorite_pressure(
         reasons.append("candidate_episode_inactive")
     if window is None or window.requested_window_minutes != policy.window_minutes:
         reasons.append("insufficient_window_history")
+    elif window.actual_window_minutes != policy.window_minutes:
+        reasons.append("window_duration_mismatch")
 
     favorite_suffix = "home" if candidate.favorite_side == "home" else "away"
     opponent_suffix = "away" if candidate.favorite_side == "home" else "home"

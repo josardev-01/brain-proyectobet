@@ -19,7 +19,7 @@ from brain_projectbet.domain.alerts import AlertEvent, trigger_once_alert_id
 from brain_projectbet.domain.candidates import CandidatePolicy, observe_candidate
 from brain_projectbet.domain.models import PrematchOdds
 from brain_projectbet.domain.objectives import FAVORITE_GOAL_WITHIN_10M_V1
-from brain_projectbet.monitoring.selection import select_live_eligible
+from brain_projectbet.monitoring.selection import needs_statistics_sample, select_live_eligible
 from brain_projectbet.normalization.api_football import normalize_snapshot
 from brain_projectbet.providers.api_football import ApiFootballProbe
 from brain_projectbet.rules.favorite_pressure import evaluate_favorite_pressure
@@ -40,7 +40,7 @@ def main() -> int:
     parser.add_argument("--registry", type=Path, default=Path("data/raw/eligible") / f"{date.today().isoformat()}.json")
     parser.add_argument("--cycles", type=int, default=1)
     parser.add_argument("--interval-seconds", type=int, default=120)
-    parser.add_argument("--maximum-matches", type=int, default=2)
+    parser.add_argument("--maximum-matches", type=int, default=3)
     parser.add_argument("--daily-reserve", type=int, default=15)
     args = parser.parse_args()
     if args.cycles <= 0 or args.interval_seconds <= 0 or args.maximum_matches <= 0:
@@ -61,8 +61,18 @@ def main() -> int:
             warmup_minute=policy.warmup_minute,
             maximum_matches=args.maximum_matches,
         )
+        selected_for_statistics = []
+        for registered, fixture_payload in selected:
+            snapshot_path = Path("data/raw/snapshots") / f"api-football-{registered.fixture_id}.jsonl"
+            if needs_statistics_sample(
+                registered,
+                fixture_payload,
+                has_snapshots=bool(load_snapshots(snapshot_path)),
+                minimum_minute=policy.minimum_minute,
+            ):
+                selected_for_statistics.append((registered, fixture_payload))
         daily_remaining = live.rate_limits().daily_remaining
-        required_for_stats = len(selected)
+        required_for_stats = len(selected_for_statistics)
         if daily_remaining is not None and daily_remaining - required_for_stats < args.daily_reserve:
             print(json.dumps({
                 "cycle": cycle,
@@ -73,7 +83,7 @@ def main() -> int:
             break
 
         cycle_results = []
-        for registered, fixture_payload in selected:
+        for registered, fixture_payload in selected_for_statistics:
             statistics = probe.fixture_statistics(registered.fixture_id)
             snapshot = normalize_snapshot(
                 fixture_payload,
@@ -142,6 +152,7 @@ def main() -> int:
             "cycle": cycle,
             "eligible_registered": len(eligible),
             "live_selected": len(selected),
+            "statistics_selected": len(selected_for_statistics),
             "daily_remaining": daily_remaining,
             "results": cycle_results,
         }, ensure_ascii=False))
