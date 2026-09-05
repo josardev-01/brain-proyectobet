@@ -1,6 +1,6 @@
 # CEREBRO DEL PROYECTO — Estadísticas de Fútbol
 
-**Versión:** 0.2  
+**Versión:** 0.3
 **Estado:** Base operativa inicial  
 **Stack base:** Python + FastAPI + PostgreSQL + frontend Node.js  
 **Canal inicial de alertas:** Telegram
@@ -405,16 +405,19 @@ Objetivo:
 
 Detectar cuando el equipo identificado como favorito antes del partido se encuentra perdiendo y presenta señales suficientes de presión ofensiva como para considerar elevada la probabilidad de que se produzca un gol durante los próximos 10 minutos.
 
-El gol puede analizarse inicialmente como:
+Primer evento objetivo acordado:
 
-- cualquier gol en el partido durante los próximos 10 minutos,
+- gol del favorito durante los próximos 10 minutos.
 
-y posteriormente separar:
+Este caso no debe quedar codificado como el único evento posible. Los objetivos serán definiciones dinámicas y versionadas que separen:
 
-- gol del favorito,
-- gol del rival.
+- tipo de evento,
+- sujeto del evento,
+- horizonte temporal,
+- precondiciones del escenario,
+- estado de validación.
 
-Esta definición debe validarse antes del primer backtesting definitivo.
+Futuros objetivos podrán analizar cualquier gol, goles de un equipo, corners, tarjetas u otros eventos disponibles sin acoplarlos al proveedor ni rediseñar el pipeline.
 
 ---
 
@@ -1178,11 +1181,13 @@ No construir todavía scraping como dependencia principal hasta demostrar que un
 
 # Estado actual
 
-**CEREBRO v0.2**
+**CEREBRO v0.3**
 
-Primer escenario definido:
+Primer objetivo definido:
 
-> Detectar una probabilidad elevada de gol durante los próximos 10 minutos cuando el favorito pre-match se encuentra perdiendo.
+> Estimar o detectar una probabilidad elevada de que el favorito pre-match marque durante los próximos 10 minutos cuando se encuentra perdiendo.
+
+Los siguientes objetivos se incorporarán como definiciones dinámicas y versionadas, no como lógica fija del caso inicial.
 
 Stack provisional:
 
@@ -1195,4 +1200,3 @@ Data Provider: pendiente de spike comparativo
 ```
 
 Este archivo deberá evolucionar junto con el proyecto sin convertir decisiones experimentales en reglas permanentes antes de validarlas.
-
