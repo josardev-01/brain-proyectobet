@@ -72,6 +72,19 @@ Los snapshots se guardan como JSON Lines en `data/raw/snapshots/`. Las ventanas 
 
 El etiquetador mantiene el resultado en `null` hasta observar por completo el horizonte futuro. Los minutos añadidos todavía requieren timestamps o secuencias de eventos más precisas para desambiguar triggers dentro del mismo minuto 45/90; no usar esos casos para validar el modelo hasta resolverlo.
 
+## Registro de candidatos v1
+
+El recolector registra una observación cuando el partido es elegible y alcanzó el minuto de precalentamiento 35. La observación indica por separado si el episodio está activo:
+
+```text
+eligible_prematch = favorite_odds <= 1.55 AND normalized_probability >= 0.60
+episode_active = eligible_prematch AND minute >= 45 AND favorite_is_losing
+```
+
+El identificador incluye proveedor, fixture, objetivo, versión, minuto y tiempo añadido. Esto evita duplicar observaciones del mismo minuto y conserva trazabilidad para backtesting. La salida se guarda en `data/raw/candidates/`, excluida de Git.
+
+La alerta no equivale al candidato. Se evalúa únicamente con una ventana completa de 10 minutos y la regla `favorite_losing_pressure` v1, clasificada como `HEURÍSTICA`.
+
 ## Matriz de evaluación
 
 Registrar por proveedor y partido:

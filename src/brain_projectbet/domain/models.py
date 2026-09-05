@@ -14,6 +14,7 @@ class MatchSnapshot:
     captured_at: datetime
     minute: int | None
     status: str
+    minute_extra: int | None = None
     home_team_id: str | None = None
     away_team_id: str | None = None
     score_home: int | None = None
@@ -30,6 +31,8 @@ class MatchSnapshot:
     possession_away: float | None = None
     xg_home: float | None = None
     xg_away: float | None = None
+    red_cards_home: int | None = None
+    red_cards_away: int | None = None
     raw_metadata: Mapping[str, Any] | None = None
 
 
