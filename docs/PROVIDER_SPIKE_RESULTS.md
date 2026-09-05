@@ -125,3 +125,28 @@ Probabilidad normalizada de Celtic: 66.75%
 ```
 
 El consenso confirma la clasificación de favorito y reduce dependencia de Bet365. La ventana 45–55 describe lo ocurrido durante esos diez minutos, pero no debe reutilizarse como variable de un trigger al minuto 45; hacerlo introduciría fuga temporal.
+
+## Auditoría automática de calidad — 2026-09-05
+
+Se auditaron los archivos locales disponibles sin realizar nuevas consultas:
+
+```text
+Fixtures: 2
+Snapshots: 10
+Fixtures con estado terminal: 2
+Fixtures con alguna ventana exacta de 10 minutos: 1
+```
+
+Disponibilidad ponderada por snapshot:
+
+| Grupo de métricas | Disponibilidad observada |
+|---|---:|
+| Tiros | 90% |
+| Tiros a puerta | 90% |
+| Corners | 90% |
+| Posesión | 90% |
+| Tarjetas rojas normalizadas | 10% |
+| Ataques peligrosos | 0% |
+| xG | 0% |
+
+El 90% no implica cobertura general del proveedor: un fixture aporta nueve capturas completas y el otro únicamente un snapshot terminal sin estadísticas. La serie útil posee una ventana 45–55 exacta, pero también un salto de 35 minutos hasta el estado final. Por ahora, tiros, tiros a puerta, corners y posesión son utilizables para el spike; ataques peligrosos y xG deben considerarse no disponibles en esta muestra.

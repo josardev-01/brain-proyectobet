@@ -46,6 +46,7 @@ python scripts/discover_candidates.py --date AAAA-MM-DD
 python scripts/monitor_candidates.py --cycles 1
 python scripts/finalize_matches.py --registry data/raw/eligible/AAAA-MM-DD.json
 python scripts/summarize_backtests.py
+python scripts/audit_data_quality.py
 python scripts/send_pending_alerts.py --dry-run
 ```
 
