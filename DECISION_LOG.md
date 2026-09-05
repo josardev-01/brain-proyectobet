@@ -58,11 +58,11 @@
 - Descubrir candidatos pre-partido y consultar individualmente solo los elegibles que estén en vivo.
 - Limitar el producto a una lista fija de equipos o ligas.
 
-**Decisión:** Crear un registro diario de elegibles a partir del consenso 1X2 y usar una única consulta global de partidos en vivo por ciclo. Solo desde el minuto 35 se consultarán estadísticas de encuentros presentes en ese registro, con un máximo configurable de dos partidos por ciclo y una reserva diaria predeterminada de 15 solicitudes. La alerta se deduplica por fixture, objetivo y versión de regla.
+**Decisión:** Crear un registro diario de elegibles a partir del consenso 1X2 y usar una única consulta global de partidos en vivo por ciclo. Se guarda una línea base estadística al observar por primera vez cada elegible desde el minuto 35; después se consulta de nuevo solo mientras el favorito esté perdiendo desde el minuto 45. Se procesan como máximo tres partidos por ciclo y se conserva una reserva diaria predeterminada de 15 solicitudes. La alerta se deduplica por fixture, objetivo y versión de regla.
 
 **Motivo:** El filtrado temprano concentra la cuota en partidos útiles, permite precalentar la ventana antes del minuto 45 y evita spam cuando una condición permanece activa. Mantener objetivos y reglas versionados conserva la posibilidad de incorporar otros eventos en el futuro.
 
-**Impacto:** El descubrimiento predeterminado lee como máximo tres páginas y, por tanto, es una muestra parcial cuando el proveedor reporta más páginas. Esa limitación debe conservarse en los resultados y no se puede presentar como cobertura total. La estrategia permanece `EXPERIMENTAL` hasta definir ligas prioritarias, medir cobertura y completar backtesting.
+**Impacto:** El descubrimiento predeterminado lee como máximo tres páginas y, por tanto, es una muestra parcial cuando el proveedor reporta más páginas. Esa limitación debe conservarse en los resultados y no se puede presentar como cobertura total. Una ventana se evalúa solo si su duración real coincide con los 10 minutos declarados; saltos de captura no se reinterpretan como ventanas válidas. La estrategia permanece `EXPERIMENTAL` hasta definir ligas prioritarias, medir cobertura y completar backtesting.
 
 ## DEC-010 — Repetición temporal sin fuga de información
 

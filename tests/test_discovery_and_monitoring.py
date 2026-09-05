@@ -8,7 +8,7 @@ from brain_projectbet.discovery.eligible import discover_eligible_fixtures
 from brain_projectbet.discovery.storage import load_eligible_fixtures, save_eligible_fixtures
 from brain_projectbet.domain.alerts import AlertEvent, trigger_once_alert_id
 from brain_projectbet.domain.candidates import CandidateObservation
-from brain_projectbet.monitoring.selection import select_live_eligible
+from brain_projectbet.monitoring.selection import needs_statistics_sample, select_live_eligible
 
 
 def bookmaker(name, home, draw, away):
@@ -76,6 +76,28 @@ class MonitoringSelectionTests(unittest.TestCase):
     def test_does_not_select_before_warmup(self) -> None:
         live = {"response": [{"fixture": {"id": 10, "status": {"elapsed": 34}}}]}
         self.assertEqual(select_live_eligible(live, self.eligible), [])
+
+    def test_collects_baseline_once_before_candidate_activation(self) -> None:
+        registered = self.eligible[0]
+        fixture = {
+            "fixture": {"id": 10, "status": {"elapsed": 35}},
+            "goals": {"home": 0, "away": 0},
+        }
+        self.assertTrue(needs_statistics_sample(registered, fixture, has_snapshots=False))
+        self.assertFalse(needs_statistics_sample(registered, fixture, has_snapshots=True))
+
+    def test_collects_after_45_only_when_favorite_is_losing(self) -> None:
+        registered = self.eligible[0]
+        losing = {
+            "fixture": {"id": 10, "status": {"elapsed": 50}},
+            "goals": {"home": 1, "away": 0},
+        }
+        winning = {
+            "fixture": {"id": 10, "status": {"elapsed": 50}},
+            "goals": {"home": 0, "away": 1},
+        }
+        self.assertTrue(needs_statistics_sample(registered, losing, has_snapshots=True))
+        self.assertFalse(needs_statistics_sample(registered, winning, has_snapshots=True))
 
     def test_alert_storage_deduplicates(self) -> None:
         alert = AlertEvent(
