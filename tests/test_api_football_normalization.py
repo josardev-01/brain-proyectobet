@@ -83,6 +83,25 @@ class ApiFootballNormalizationTests(unittest.TestCase):
         self.assertEqual(consensus.draw, 4.75)
         self.assertEqual(consensus.away, 1.42)
 
+    def test_consensus_does_not_mix_different_fixtures(self) -> None:
+        def entry(fixture_id, away):
+            return {"fixture": {"id": fixture_id}, "bookmakers": [
+                {"name": str(index), "bets": [{"name": "Match Winner", "values": [
+                    {"value": "Home", "odd": "7.0"},
+                    {"value": "Draw", "odd": "4.5"},
+                    {"value": "Away", "odd": str(away)},
+                ]}]}
+                for index in range(3)
+            ]}
+
+        consensus, count = extract_consensus_match_winner_odds(
+            {"response": [entry(1, 1.40), entry(2, 2.50)]},
+            fixture_id="1",
+            captured_at=self.now,
+        )
+        self.assertEqual(count, 3)
+        self.assertEqual(consensus.away, 1.40)
+
 
 if __name__ == "__main__":
     unittest.main()

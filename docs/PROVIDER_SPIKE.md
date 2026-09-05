@@ -87,6 +87,32 @@ El identificador incluye proveedor, fixture, objetivo, versión, minuto y tiempo
 
 La alerta no equivale al candidato. Se evalúa únicamente con una ventana completa de 10 minutos y la regla `favorite_losing_pressure` v2, clasificada como `HEURÍSTICA`.
 
+## Descubrimiento y monitoreo automáticos
+
+El registro diario se puede generar sin conocer de antemano los identificadores de los partidos:
+
+```powershell
+$env:PYTHONPATH = "src"
+python scripts/discover_candidates.py --date 2026-09-05 --max-pages 3 --daily-reserve 15
+```
+
+La salida indica `pages_read` y `total_pages_reported`. Si son distintos, el registro tiene cobertura parcial y no representa toda la jornada. El límite de páginas protege la cuota del plan gratuito mientras se definen competiciones prioritarias.
+
+El monitor consulta primero la lista global de partidos en vivo y solicita estadísticas solo de los elegibles desde el minuto 35:
+
+```powershell
+python scripts/monitor_candidates.py --cycles 1 --maximum-matches 2 --daily-reserve 15
+```
+
+Para mantenerlo activo durante una franja de dos horas, por ejemplo, pueden usarse 60 ciclos con intervalo de 120 segundos. Cada ciclo consume una consulta global y hasta `maximum-matches` consultas de estadísticas; el gasto real disminuye cuando no hay elegibles en vivo. El proceso conserva una reserva diaria y no emite más de una alerta por combinación de partido, objetivo y versión de regla.
+
+Archivos locales generados, todos excluidos de Git:
+
+- `data/raw/eligible/AAAA-MM-DD.json`: registro pre-partido.
+- `data/raw/snapshots/api-football-ID.jsonl`: serie temporal normalizada.
+- `data/raw/candidates/api-football-ID.jsonl`: observaciones del episodio.
+- `data/raw/alerts.jsonl`: alertas deduplicadas.
+
 ## Matriz de evaluación
 
 Registrar por proveedor y partido:
