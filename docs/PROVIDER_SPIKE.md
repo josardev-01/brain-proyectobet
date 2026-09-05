@@ -113,6 +113,20 @@ Archivos locales generados, todos excluidos de Git:
 - `data/raw/candidates/api-football-ID.jsonl`: observaciones del episodio.
 - `data/raw/alerts.jsonl`: alertas deduplicadas.
 
+## Replay y etiquetado
+
+Cuando el partido haya terminado, guardar sus eventos exactos y reproducir la decisión:
+
+```powershell
+$env:PYTHONPATH = "src"
+python scripts/provider_spike.py api-football events --fixture-id ID
+python scripts/replay_fixture.py --fixture-id ID --registry data/raw/eligible/AAAA-MM-DD.json --events RUTA_AL_JSON_DE_EVENTOS
+```
+
+El replay recorre los snapshots cronológicamente. Para cada decisión, la regla solo recibe el prefijo de la serie conocido hasta ese instante; los eventos futuros se usan después y únicamente como etiqueta. Se informa la primera alerta del episodio, coherente con la política antispam del monitor.
+
+Un resultado `outcome: null` es desconocido o censurado, no un fallo de la regla. No debe convertirse en `false` al calcular métricas.
+
 ## Matriz de evaluación
 
 Registrar por proveedor y partido:

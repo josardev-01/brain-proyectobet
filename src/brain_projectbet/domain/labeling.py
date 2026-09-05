@@ -20,6 +20,7 @@ def label_goal_objective(
     objective: ObjectiveDefinition,
     *,
     trigger_minute: int,
+    trigger_minute_extra: int | None = None,
     subject_team_id: str,
     events: Iterable[Mapping[str, Any]],
     observed_until_minute: int,
@@ -28,14 +29,33 @@ def label_goal_objective(
     if objective.target.event_type != "goal":
         raise ValueError("este etiquetador solo admite objetivos de gol")
     horizon_end = trigger_minute + objective.target.horizon_minutes
-    goal_observed = any(
-        event.get("type") == "Goal"
-        and str(event.get("team", {}).get("id")) == subject_team_id
-        and trigger_minute
-        < int(event.get("time", {}).get("elapsed", -1))
-        <= min(horizon_end, observed_until_minute)
-        for event in events
-    )
+    trigger_extra = trigger_minute_extra or 0
+
+    def minutes_after_trigger(event: Mapping[str, Any]) -> int | None:
+        event_time = event.get("time", {})
+        try:
+            elapsed = int(event_time.get("elapsed", -1))
+            extra = int(event_time.get("extra") or 0)
+        except (TypeError, ValueError):
+            return None
+        if elapsed < trigger_minute:
+            return None
+        if elapsed == trigger_minute:
+            return extra - trigger_extra
+        return elapsed - trigger_minute
+
+    goal_observed = False
+    for event in events:
+        distance = minutes_after_trigger(event)
+        if (
+            event.get("type") == "Goal"
+            and str(event.get("team", {}).get("id")) == subject_team_id
+            and distance is not None
+            and 0 < distance <= objective.target.horizon_minutes
+            and int(event.get("time", {}).get("elapsed", -1)) <= observed_until_minute
+        ):
+            goal_observed = True
+            break
     censored_reason = None
     if goal_observed:
         outcome = True

@@ -62,6 +62,21 @@ class LabelingTests(unittest.TestCase):
         self.assertIsNone(label.outcome)
         self.assertEqual(label.censored_reason, "match_ended_before_horizon")
 
+    def test_goal_later_in_same_stoppage_minute_is_positive(self) -> None:
+        events = [
+            {"type": "Goal", "team": {"id": 2}, "time": {"elapsed": 90, "extra": 5}}
+        ]
+        label = label_goal_objective(
+            FAVORITE_GOAL_WITHIN_10M_V1,
+            trigger_minute=90,
+            trigger_minute_extra=2,
+            subject_team_id="2",
+            events=events,
+            observed_until_minute=90,
+            match_ended=True,
+        )
+        self.assertTrue(label.outcome)
+
 
 if __name__ == "__main__":
     unittest.main()
