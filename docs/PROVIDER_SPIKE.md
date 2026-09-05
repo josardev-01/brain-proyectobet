@@ -148,6 +148,16 @@ El finalizador consulta primero el estado del fixture. Solo para `FT`, `AET` o `
 
 El resumen calcula precisión únicamente sobre alertas con resultado observable. Mientras no exista una población completa de oportunidades etiquetadas, `recall`, `F1` y `lift` se mantienen en `null` deliberadamente.
 
+## Auditoría de calidad
+
+Antes de interpretar alertas o métricas, auditar las series locales:
+
+```powershell
+python scripts/audit_data_quality.py
+```
+
+El reporte se guarda en `data/raw/quality/report.json` e informa cobertura de campos, snapshots terminales, duplicados del reloj, hueco temporal máximo y cuántos fixtures permiten reconstruir al menos una ventana exacta de 10 minutos. Un campo ausente permanece ausente; no se convierte en cero.
+
 ## Entrega por Telegram
 
 Las alertas se guardan primero como una bandeja local. Para revisar mensajes pendientes sin enviarlos:

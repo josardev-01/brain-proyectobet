@@ -109,3 +109,13 @@
 **Motivo:** Garantiza que filtro pre-partido, ventana, trigger y replay usen la misma definición, y permite comparar nuevas versiones sin tocar adquisición ni normalización.
 
 **Impacto:** Una versión evaluada no debe editarse ni sobrescribirse; cualquier cambio de umbral requiere copiar la definición, incrementar la versión y conservar la anterior. El adaptador `favorite_pressure` actual admite específicamente el objetivo de gol del favorito pre-partido. Nuevos eventos como corners o tarjetas reutilizarán la infraestructura, pero deberán incorporar un evaluador y etiquetador compatibles.
+
+## DEC-014 — Auditoría de calidad antes de interpretar resultados
+
+**Problema:** Una regla puede no alertar por comportamiento deportivo o porque faltan estadísticas, snapshots o ventanas temporales completas.
+
+**Decisión:** Auditar automáticamente cada serie por cobertura temporal, estado terminal, duplicados de reloj, separación máxima, existencia de una ventana exacta de 10 minutos y disponibilidad de campos normalizados.
+
+**Motivo:** Separa ausencia de señal de ausencia de datos y evita atribuir al modelo limitaciones originadas en adquisición.
+
+**Impacto:** Todo análisis de rendimiento deberá acompañarse de cobertura. La primera auditoría confirma datos útiles de tiros, tiros a puerta, corners y posesión, pero no cobertura de ataques peligrosos ni xG en la muestra actual.
