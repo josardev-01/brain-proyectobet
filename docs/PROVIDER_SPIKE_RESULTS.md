@@ -75,7 +75,40 @@ Favorito: away (Celtic)
 Probabilidad normalizada: 66.59%
 Precondición favorito perdiendo: true
 Ventanas disponibles: ninguna; todavía falta historia suficiente
-Solicitudes restantes informadas: 7
+Solicitudes restantes informadas por el límite del minuto: 7
 ```
 
-El recolector se detuvo al quedar por debajo del margen de seguridad de 10 solicitudes. No se deben realizar nuevas capturas hasta que la cuota se restablezca o se confirme un límite superior.
+El recolector se detuvo porque interpretó incorrectamente el encabezado del límite por minuto como cuota diaria. El dashboard mostraba solo 6% de uso y la documentación oficial distingue ambos encabezados. La lógica fue corregida para proteger la cuota diaria sin detener una captura válida por el contador del minuto.
+
+## Primera ventana temporal y etiqueta real
+
+Después de separar correctamente los límites, la API informó:
+
+```text
+Cuota diaria: 100
+Restante antes de la serie: 93
+Límite por minuto: 10
+Restante en ese minuto: 9
+```
+
+Se capturaron snapshots en los minutos 45, 49, 50, 51, 52, 53, 54 y 55. La serie se detuvo voluntariamente al completar la primera ventana de 10 minutos, conservando cuota.
+
+Ventana 45–55:
+
+| Delta acumulado | ST Mirren | Celtic |
+|---|---:|---:|
+| Tiros | 0 | 3 |
+| Tiros a puerta | 0 | 1 |
+| Corners | 0 | 2 |
+
+Los eventos del fixture confirmaron un gol de Liam Scales para Celtic al minuto 51. Para el trigger observado en el minuto 42:
+
+```text
+Objetivo: favorite_goal_within_10m v1
+Sujeto: Celtic (team_id 247)
+Horizonte observable: minuto 42 < evento <= minuto 52
+Gol del sujeto: minuto 51
+Etiqueta: true
+```
+
+Este caso demuestra que el pipeline puede enlazar odds, marcador, snapshots, equipo favorito y evento futuro. Sigue siendo una observación `EXPERIMENTAL`; no valida todavía una fórmula predictiva ni los umbrales de presión.

@@ -30,7 +30,7 @@ def build_probe(provider: str):
 def main() -> int:
     parser = argparse.ArgumentParser(description="Captura respuestas crudas para comparar proveedores")
     parser.add_argument("provider", choices=("api-football", "sportmonks"))
-    parser.add_argument("operation", choices=("live", "statistics", "odds"))
+    parser.add_argument("operation", choices=("live", "statistics", "events", "odds"))
     parser.add_argument("--fixture-id")
     parser.add_argument("--output-dir", type=Path, default=Path("data/raw/provider-spike"))
     args = parser.parse_args()
@@ -39,12 +39,16 @@ def main() -> int:
     probe = build_probe(args.provider)
     if args.operation == "live":
         result = probe.live_matches()
-    elif args.operation == "statistics":
+    elif args.operation in {"statistics", "events"}:
         if args.provider != "api-football":
-            parser.error("SportMonks incluye statistics en la operación live del spike")
+            parser.error("SportMonks incluye statistics y events en en la operación live del spike")
         if not args.fixture_id:
-            parser.error("--fixture-id es obligatorio para statistics")
-        result = probe.fixture_statistics(args.fixture_id)
+            parser.error(f"--fixture-id es obligatorio para {args.operation}")
+        result = (
+            probe.fixture_statistics(args.fixture_id)
+            if args.operation == "statistics"
+            else probe.fixture_events(args.fixture_id)
+        )
     else:
         if not args.fixture_id:
             parser.error("--fixture-id es obligatorio para odds")
@@ -55,11 +59,15 @@ def main() -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / f"{captured_at:%Y%m%dT%H%M%SZ}-{result.operation}.json"
     output_path.write_text(json.dumps(result.payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    limits = result.rate_limits()
     print(json.dumps({
         "provider": result.provider,
         "operation": result.operation,
         "elapsed_ms": round(result.elapsed_ms, 2),
-        "remaining_requests": result.remaining_requests(),
+        "daily_limit": limits.daily_limit,
+        "daily_remaining": limits.daily_remaining,
+        "minute_limit": limits.minute_limit,
+        "minute_remaining": limits.minute_remaining,
         "output": str(output_path),
     }, ensure_ascii=False))
     return 0
