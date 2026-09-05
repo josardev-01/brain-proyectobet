@@ -55,8 +55,10 @@ Una vez identificado un fixture y un bookmaker con mercado 1X2:
 
 ```powershell
 $env:PYTHONPATH = "src"
-python scripts/collect_fixture.py --fixture-id ID --bookmaker Bet365 --cycles 1
+python scripts/collect_fixture.py --fixture-id ID --cycles 1
 ```
+
+Por defecto se utiliza el consenso mediano de al menos tres bookmakers. Para forzar una casa específica, añade por ejemplo `--bookmaker Bet365`.
 
 Para una serie real, aumenta `--cycles` y conserva el intervalo predeterminado de 60 segundos. Cada ciclo consume dos solicitudes después de la consulta inicial de odds. El proceso se detiene si termina el partido o si la cuota diaria restante alcanza `--minimum-remaining`.
 
@@ -83,7 +85,7 @@ episode_active = eligible_prematch AND minute >= 45 AND favorite_is_losing
 
 El identificador incluye proveedor, fixture, objetivo, versión, minuto y tiempo añadido. Esto evita duplicar observaciones del mismo minuto y conserva trazabilidad para backtesting. La salida se guarda en `data/raw/candidates/`, excluida de Git.
 
-La alerta no equivale al candidato. Se evalúa únicamente con una ventana completa de 10 minutos y la regla `favorite_losing_pressure` v1, clasificada como `HEURÍSTICA`.
+La alerta no equivale al candidato. Se evalúa únicamente con una ventana completa de 10 minutos y la regla `favorite_losing_pressure` v2, clasificada como `HEURÍSTICA`.
 
 ## Matriz de evaluación
 

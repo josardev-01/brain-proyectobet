@@ -37,6 +37,31 @@ class LabelingTests(unittest.TestCase):
         )
         self.assertFalse(label.outcome)
 
+    def test_goal_is_positive_even_if_match_ends_before_full_horizon(self) -> None:
+        events = [{"type": "Goal", "team": {"id": 2}, "time": {"elapsed": 92}}]
+        label = label_goal_objective(
+            FAVORITE_GOAL_WITHIN_10M_V1,
+            trigger_minute=90,
+            subject_team_id="2",
+            events=events,
+            observed_until_minute=95,
+            match_ended=True,
+        )
+        self.assertTrue(label.outcome)
+        self.assertIsNone(label.censored_reason)
+
+    def test_no_goal_is_censored_if_match_ends_before_horizon(self) -> None:
+        label = label_goal_objective(
+            FAVORITE_GOAL_WITHIN_10M_V1,
+            trigger_minute=90,
+            subject_team_id="2",
+            events=[],
+            observed_until_minute=95,
+            match_ended=True,
+        )
+        self.assertIsNone(label.outcome)
+        self.assertEqual(label.censored_reason, "match_ended_before_horizon")
+
 
 if __name__ == "__main__":
     unittest.main()

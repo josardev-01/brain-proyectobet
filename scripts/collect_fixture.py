@@ -11,7 +11,11 @@ from brain_projectbet.collection.series import derive_window
 from brain_projectbet.collection.storage import append_candidate_once, append_snapshot, load_snapshots
 from brain_projectbet.domain.candidates import CandidatePolicy, observe_candidate
 from brain_projectbet.domain.objectives import FAVORITE_GOAL_WITHIN_10M_V1
-from brain_projectbet.normalization.api_football import extract_match_winner_odds, normalize_snapshot
+from brain_projectbet.normalization.api_football import (
+    extract_consensus_match_winner_odds,
+    extract_match_winner_odds,
+    normalize_snapshot,
+)
 from brain_projectbet.providers.api_football import ApiFootballProbe
 from brain_projectbet.rules.favorite_pressure import evaluate_favorite_pressure
 
@@ -37,7 +41,7 @@ def require_payload_item(payload: dict, operation: str) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Recolecta snapshots controlados de un fixture")
     parser.add_argument("--fixture-id", required=True)
-    parser.add_argument("--bookmaker", default="Bet365")
+    parser.add_argument("--bookmaker", default="consensus")
     parser.add_argument("--cycles", type=int, default=1)
     parser.add_argument("--interval-seconds", type=int, default=60)
     parser.add_argument("--minimum-remaining", type=int, default=10)
@@ -48,12 +52,20 @@ def main() -> int:
     load_dotenv(Path(".env"))
     probe = ApiFootballProbe(os.getenv("API_FOOTBALL_KEY", ""))
     odds_response = probe.prematch_odds(args.fixture_id)
-    odds = extract_match_winner_odds(
-        odds_response.payload,
-        fixture_id=args.fixture_id,
-        bookmaker_name=args.bookmaker,
-        captured_at=datetime.now(UTC),
-    )
+    if args.bookmaker == "consensus":
+        odds, odds_source_count = extract_consensus_match_winner_odds(
+            odds_response.payload,
+            fixture_id=args.fixture_id,
+            captured_at=datetime.now(UTC),
+        )
+    else:
+        odds = extract_match_winner_odds(
+            odds_response.payload,
+            fixture_id=args.fixture_id,
+            bookmaker_name=args.bookmaker,
+            captured_at=datetime.now(UTC),
+        )
+        odds_source_count = 1
     favorite_side = odds.favorite_side()
     probabilities = odds.normalized_probabilities()
     output = Path("data/raw/snapshots") / f"api-football-{args.fixture_id}.jsonl"
@@ -126,6 +138,8 @@ def main() -> int:
             "favorite_side": favorite_side,
             "favorite_team_id": favorite_team_id,
             "favorite_probability": round(probabilities[0 if favorite_side == 'home' else 2], 4),
+            "odds_source": args.bookmaker,
+            "odds_source_count": odds_source_count,
             "precondition_met": precondition_met,
             "candidate_registered": candidate_registered,
             "windows_ready": [key for key, value in windows.items() if value is not None],

@@ -36,7 +36,14 @@ def odds(away=1.42):
     )
 
 
-def window(*, shots=4, shots_on_target=1, corners=2):
+def window(
+    *,
+    shots=4,
+    shots_on_target=1,
+    corners=2,
+    opponent_shots=0,
+    opponent_shots_on_target=0,
+):
     return WindowFeatures(
         provider_match_id="1556663",
         from_minute=80,
@@ -44,9 +51,9 @@ def window(*, shots=4, shots_on_target=1, corners=2):
         requested_window_minutes=10,
         actual_window_minutes=10,
         deltas={
-            "shots_home": 0,
+            "shots_home": opponent_shots,
             "shots_away": shots,
-            "shots_on_target_home": 0,
+            "shots_on_target_home": opponent_shots_on_target,
             "shots_on_target_away": shots_on_target,
             "dangerous_attacks_home": None,
             "dangerous_attacks_away": None,
@@ -105,6 +112,7 @@ class FavoritePressureRuleTests(unittest.TestCase):
         decision = evaluate_favorite_pressure(candidate, current, window())
         self.assertTrue(decision.should_alert)
         self.assertEqual(decision.status, "HEURÍSTICA")
+        self.assertEqual(decision.rule_version, 2)
 
     def test_alerts_with_shots_on_target_branch(self) -> None:
         current = snapshot()
@@ -127,6 +135,32 @@ class FavoritePressureRuleTests(unittest.TestCase):
         decision = evaluate_favorite_pressure(candidate, current, window())
         self.assertFalse(decision.should_alert)
         self.assertIn("favorite_has_red_card_disadvantage", decision.reasons)
+
+    def test_does_not_alert_on_pressure_without_shot_on_target(self) -> None:
+        current = snapshot()
+        candidate = observe_candidate(current, odds(), FAVORITE_GOAL_WITHIN_10M_V1)
+        decision = evaluate_favorite_pressure(
+            candidate, current, window(shots=6, shots_on_target=0, corners=3)
+        )
+        self.assertFalse(decision.should_alert)
+        self.assertIn("pressure_threshold_not_met", decision.reasons)
+
+    def test_does_not_alert_when_opponent_dominates_window(self) -> None:
+        current = snapshot()
+        candidate = observe_candidate(current, odds(), FAVORITE_GOAL_WITHIN_10M_V1)
+        decision = evaluate_favorite_pressure(
+            candidate,
+            current,
+            window(
+                shots=3,
+                shots_on_target=2,
+                corners=1,
+                opponent_shots=5,
+                opponent_shots_on_target=3,
+            ),
+        )
+        self.assertFalse(decision.should_alert)
+        self.assertIn("favorite_not_dominant_in_window", decision.reasons)
 
 
 if __name__ == "__main__":
