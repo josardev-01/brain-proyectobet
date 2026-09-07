@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: projectbet
+      POSTGRES_USER: projectbet
+      POSTGRES_PASSWORD: projectbet_local
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U projectbet"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://projectbet:projectbet_local@postgres:5432/projectbet
+      API_CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

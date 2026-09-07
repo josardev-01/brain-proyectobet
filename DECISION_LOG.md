@@ -149,3 +149,13 @@
 **Motivo:** La cobertura operativa es ahora el cuello de botella; cambiar la heurística con partidos no observados confundiría ausencia de datos con ausencia de señal.
 
 **Impacto:** El intervalo predeterminado es de diez minutos, compatible con la ventana exacta evaluada y con el presupuesto disponible para la jornada. Una ventana exacta de 10 minutos requiere observaciones compatibles y no se inventa si hay interrupciones. El proceso debe seguir respetando la reserva diaria y los límites por minuto del proveedor. Si hay más candidatos que capacidad por ciclo, se priorizan episodios activos sobre líneas base pendientes.
+
+## DEC-018 — Desarrollo de producto desacoplado de la validación estadística
+
+**Problema:** Esperar una muestra suficiente antes de construir API, persistencia y experiencia de usuario alarga el calendario sin mejorar la captura de evidencia.
+
+**Decisión:** Avanzar en paralelo con un MVP integrado. PostgreSQL es el almacén productivo; SQLite comparte los modelos para desarrollo local. SQLAlchemy define el mapeo, Alembic versiona el esquema, FastAPI expone contratos REST y Next.js consume esos contratos. La bitácora JSON/JSONL se conserva temporalmente como evidencia recuperable y se sincroniza de forma idempotente.
+
+**Motivo:** El contrato de partidos, snapshots, estrategias versionadas y alertas es estable aunque cambien posteriormente los umbrales. Esto permite desarrollar producto sin presentar la heurística como validada.
+
+**Impacto:** Backend y frontend deben mostrar el estado estadístico explícito. La primera versión web permite observar partidos, snapshots, estrategias y alertas, además de registrar nuevos objetivos como definiciones inactivas. Ejecutar tipos de regla adicionales, autenticación y multiusuario quedan como siguientes incrementos; no se simula soporte que el worker todavía no tenga.

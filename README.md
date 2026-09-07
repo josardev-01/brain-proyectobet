@@ -4,11 +4,11 @@ Sistema para analizar partidos de fútbol en vivo, evaluar reglas configurables 
 
 ## Estado
 
-Fase inicial de descubrimiento técnico. El primer objetivo es validar la disponibilidad y calidad de los datos necesarios para detectar escenarios donde el favorito pre-partido va perdiendo y existe presión compatible con un gol en los próximos 10 minutos.
+MVP integrado en desarrollo: adquisición y reglas operativas, base SQL versionada, API REST y dashboard Next.js. La heurística deportiva sigue pendiente de validación; esto no bloquea el desarrollo de producto.
 
 ## Próximo hito
 
-Ejecutar el monitor automático sobre partidos reales y reunir una muestra suficiente para medir:
+Completar autenticación, administración multiusuario y ejecución de más tipos de objetivo mientras el worker reúne la muestra necesaria para medir:
 
 - cobertura y estadísticas disponibles;
 - frecuencia de actualización y latencia;
@@ -23,6 +23,8 @@ No se considera validada ninguna fórmula o regla hasta evaluarla mediante datos
 
 - [`CEREBRO_ESTADISTICAS_FUTBOL.md`](CEREBRO_ESTADISTICAS_FUTBOL.md): principios, decisiones y dirección del producto.
 - [`DECISION_LOG.md`](DECISION_LOG.md): decisiones duraderas y su contexto.
+- [`ARQUITECTURA.md`](ARQUITECTURA.md): componentes y límites del MVP.
+- [`MODELO_DATOS.md`](MODELO_DATOS.md): tablas e invariantes de persistencia.
 - [`.agents/skills/football-live-statistics/SKILL.md`](.agents/skills/football-live-statistics/SKILL.md): habilidad local para aplicar esos criterios durante el desarrollo.
 
 ## Stack previsto
@@ -57,3 +59,26 @@ El flujo descubre favoritos claros, monitorea únicamente los escenarios relevan
 `run_matchday.py` es el ejecutor persistente y reiniciable. Empieza a consultar en el minuto 35 para llegar con línea base al minuto 45, agrupa partidos solapados en una sola ventana, consulta cada diez minutos y finaliza la jornada tres horas después del último comienzo. Diez minutos conserva el intervalo temporal exacto que evalúa la heurística y deja margen suficiente en la cuota actual; puede ajustarse con `--interval-seconds`. `--dry-run` permite revisar el horario sin consumir cuota y `--once` ejecuta solo la acción que corresponde al momento actual, útil para un programador externo.
 
 La definición activa está en [`config/strategies/favorite_losing_pressure_v2.json`](config/strategies/favorite_losing_pressure_v2.json). Los comandos aceptan `--strategy` para ejecutar otra versión sin modificar el motor.
+
+## Aplicación local
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python -m pip install -e ".[dev]"
+.\.venv\Scripts\alembic upgrade head
+$env:PYTHONPATH = "src"
+.\.venv\Scripts\python scripts\sync_database.py
+.\.venv\Scripts\uvicorn brain_projectbet.api.main:app --reload
+```
+
+En otra terminal:
+
+```powershell
+cd frontend
+pnpm install
+pnpm dev
+```
+
+API: `http://localhost:8000`, documentación OpenAPI: `http://localhost:8000/docs`, frontend: `http://localhost:3000`.
+
+Con Docker instalado, `docker compose up --build` inicia PostgreSQL, API y web. SQLite (`data/projectbet.db`) es únicamente el valor predeterminado local.
