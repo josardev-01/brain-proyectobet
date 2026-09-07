@@ -25,6 +25,7 @@ No se considera validada ninguna fórmula o regla hasta evaluarla mediante datos
 - [`DECISION_LOG.md`](DECISION_LOG.md): decisiones duraderas y su contexto.
 - [`ARQUITECTURA.md`](ARQUITECTURA.md): componentes y límites del MVP.
 - [`MODELO_DATOS.md`](MODELO_DATOS.md): tablas e invariantes de persistencia.
+- [`docs/DEPLOY_ORACLE.md`](docs/DEPLOY_ORACLE.md): despliegue seguro con Docker y HTTPS en Oracle Cloud.
 - [`.agents/skills/football-live-statistics/SKILL.md`](.agents/skills/football-live-statistics/SKILL.md): habilidad local para aplicar esos criterios durante el desarrollo.
 
 ## Stack previsto

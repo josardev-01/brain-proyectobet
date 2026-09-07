@@ -3,6 +3,7 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY migrations ./migrations
+COPY scripts ./scripts
 COPY alembic.ini ./
 RUN pip install --no-cache-dir .
 CMD ["sh", "-c", "alembic upgrade head && uvicorn brain_projectbet.api.main:app --host 0.0.0.0 --port 8000"]
