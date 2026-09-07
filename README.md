@@ -85,3 +85,5 @@ API: `http://localhost:8000`, documentación OpenAPI: `http://localhost:8000/doc
 Cada usuario puede registrar uno o más `chat_id` de Telegram desde **Cuenta**. El token del bot es global y permanece en `TELEGRAM_BOT_TOKEN`; `send_database_alerts.py` entrega cada alerta una sola vez por destino y conserva los reintentos en la base.
 
 Con Docker instalado, `docker compose up --build` inicia PostgreSQL, API y web. SQLite (`data/projectbet.db`) es únicamente el valor predeterminado local.
+
+Cada push y pull request ejecuta en GitHub Actions las pruebas del backend, verifica las migraciones, comprueba TypeScript y compila el frontend.
