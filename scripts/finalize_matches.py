@@ -19,6 +19,8 @@ from brain_projectbet.discovery.storage import load_eligible_fixtures
 from brain_projectbet.domain.models import PrematchOdds
 from brain_projectbet.normalization.api_football import normalize_snapshot
 from brain_projectbet.providers.api_football import ApiFootballProbe
+from brain_projectbet.providers.http import ProviderHttpError
+from brain_projectbet.providers.quota import quota_block_reason
 from brain_projectbet.strategies.config import DEFAULT_STRATEGY_PATH, load_strategy
 
 
@@ -64,6 +66,8 @@ def main() -> int:
     now = datetime.now(UTC)
     processed = []
     daily_remaining = None
+    minute_remaining = None
+    stopped = None
 
     due = [
         fixture
@@ -80,10 +84,23 @@ def main() -> int:
     ][: args.maximum_fixtures]
 
     for registered in due:
-        if daily_remaining is not None and daily_remaining <= args.daily_reserve:
+        if daily_remaining is not None or minute_remaining is not None:
+            reason = quota_block_reason(
+                fixture_limits,
+                requested=2,
+                daily_reserve=args.daily_reserve,
+            )
+            if reason is not None:
+                stopped = reason
+                break
+        try:
+            fixture_response = probe.fixture(registered.fixture_id)
+        except ProviderHttpError as error:
+            stopped = f"provider_http_{error.status_code}"
             break
-        fixture_response = probe.fixture(registered.fixture_id)
-        daily_remaining = fixture_response.rate_limits().daily_remaining
+        fixture_limits = fixture_response.rate_limits()
+        daily_remaining = fixture_limits.daily_remaining
+        minute_remaining = fixture_limits.minute_remaining
         response = fixture_response.payload.get("response", [])
         if not response:
             processed.append({"fixture_id": registered.fixture_id, "status": "fixture_missing"})
@@ -93,8 +110,14 @@ def main() -> int:
         if match_status not in RESULT_STATUSES:
             processed.append({"fixture_id": registered.fixture_id, "status": match_status, "finalized": False})
             continue
-        if daily_remaining is not None and daily_remaining - 1 < args.daily_reserve:
-            processed.append({"fixture_id": registered.fixture_id, "status": "waiting_for_event_quota"})
+        reason = quota_block_reason(
+            fixture_limits,
+            requested=1,
+            daily_reserve=args.daily_reserve,
+        )
+        if reason is not None:
+            processed.append({"fixture_id": registered.fixture_id, "status": f"waiting_for_{reason}"})
+            stopped = reason
             break
 
         snapshot_path = Path("data/raw/snapshots") / f"api-football-{registered.fixture_id}.jsonl"
@@ -109,8 +132,19 @@ def main() -> int:
         fixture_output.write_text(
             json.dumps(fixture_response.payload, ensure_ascii=False, indent=2), encoding="utf-8"
         )
-        event_response = probe.fixture_events(registered.fixture_id)
-        daily_remaining = event_response.rate_limits().daily_remaining
+        try:
+            event_response = probe.fixture_events(registered.fixture_id)
+        except ProviderHttpError as error:
+            processed.append({
+                "fixture_id": registered.fixture_id,
+                "status": f"provider_http_{error.status_code}",
+                "retry_after": error.retry_after,
+            })
+            stopped = f"provider_http_{error.status_code}"
+            break
+        fixture_limits = event_response.rate_limits()
+        daily_remaining = fixture_limits.daily_remaining
+        minute_remaining = fixture_limits.minute_remaining
         events = event_response.payload.get("response", [])
         event_output = Path("data/raw/events") / f"api-football-{registered.fixture_id}.json"
         event_output.parent.mkdir(parents=True, exist_ok=True)
@@ -163,6 +197,8 @@ def main() -> int:
         "strategy_version": strategy.version,
         "processed": processed,
         "daily_remaining": daily_remaining,
+        "minute_remaining": minute_remaining,
+        "stopped": stopped,
         "summary": asdict(summary),
     }, ensure_ascii=False))
     return 0

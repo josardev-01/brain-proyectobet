@@ -150,3 +150,21 @@ Disponibilidad ponderada por snapshot:
 | xG | 0% |
 
 El 90% no implica cobertura general del proveedor: un fixture aporta nueve capturas completas y el otro únicamente un snapshot terminal sin estadísticas. La serie útil posee una ventana 45–55 exacta, pero también un salto de 35 minutos hasta el estado final. Por ahora, tiros, tiros a puerta, corners y posesión son utilizables para el spike; ataques peligrosos y xG deben considerarse no disponibles en esta muestra.
+
+## Segunda jornada de elegibles — 2026-09-06
+
+Se revisaron tres páginas de 64 reportadas y se identificaron cinco favoritos mediante consenso. Los cinco fixtures se cerraron con resultado y eventos finales. La auditoría de secuencia de goles reconcilió correctamente los cinco marcadores.
+
+Exposición al escenario objetivo:
+
+| Partido | Favorito | Primera vez perdiendo desde 45' |
+|---|---|---:|
+| FC Dallas vs Sporting Kansas City | FC Dallas | No ocurrió |
+| Vancouver Whitecaps vs St. Louis City | Vancouver Whitecaps | 45' |
+| Orgryte IS vs Hammarby FF | Hammarby FF | No ocurrió |
+| Remo vs Flamengo | Flamengo | No ocurrió |
+| Corinthians vs Chapecoense | Corinthians | 77' |
+
+Hubo dos escenarios reales, pero no existían snapshots en vivo de esos fixtures. Por tanto, no se puede evaluar retrospectivamente la presión sin introducir datos que no fueron capturados en el instante correspondiente. La ronda demuestra que el filtro encuentra casos útiles y que la siguiente prioridad es mantener activo el monitor durante las ventanas programadas.
+
+Durante el cierre se observó HTTP 429 al superar el límite de 10 solicitudes por minuto, aun con cuota diaria suficiente. El finalizador se endureció para detenerse antes de cruzar cualquiera de los dos límites y reanudó los dos fixtures pendientes sin duplicar los siete ya completados. Al finalizar quedaron 80 solicitudes diarias y 6 del minuto.

@@ -119,3 +119,23 @@
 **Motivo:** Separa ausencia de señal de ausencia de datos y evita atribuir al modelo limitaciones originadas en adquisición.
 
 **Impacto:** Todo análisis de rendimiento deberá acompañarse de cobertura. La primera auditoría confirma datos útiles de tiros, tiros a puerta, corners y posesión, pero no cobertura de ataques peligrosos ni xG en la muestra actual.
+
+## DEC-015 — Protección conjunta de cuota diaria y por minuto
+
+**Problema:** Una ejecución por lotes puede conservar la cuota diaria y aun así recibir HTTP 429 al superar las 10 solicitudes permitidas dentro del minuto.
+
+**Decisión:** Antes de iniciar otro fixture o descargar sus eventos, el finalizador comprueba cuántas solicitudes necesita contra ambos contadores. Si no existe capacidad, termina de forma reanudable. Los errores HTTP del proveedor se convierten en errores sanitizados sin exponer credenciales ni producir escrituras duplicadas.
+
+**Motivo:** El límite diario controla coste y el límite por minuto controla ráfagas; ambos son independientes y deben respetarse.
+
+**Impacto:** Los cierres parciales se pueden ejecutar otra vez: los registros completos se omiten y el fixture interrumpido continúa cuando vuelve a existir capacidad.
+
+## DEC-016 — Exposición al escenario separada de disponibilidad estadística
+
+**Problema:** Sin snapshots en vivo no se puede saber desde los resultados de replay si el favorito nunca perdió o si existió un candidato que no fue observado.
+
+**Decisión:** Reconstruir con los eventos de gol si el favorito estuvo perdiendo desde el minuto 45 y validar la secuencia contra el marcador final. Si los goles no reconcilian el resultado, la exposición queda desconocida en vez de inferirse.
+
+**Motivo:** Permite medir oportunidades perdidas por operación sin usar esa reconstrucción futura como variable de una alerta en vivo.
+
+**Impacto:** En los primeros nueve elegibles hubo dos exposiciones reales no monitoreadas. La prioridad pasa a ser un worker persistente de jornada; no se modificarán umbrales con esta muestra incompleta.

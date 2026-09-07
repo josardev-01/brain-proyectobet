@@ -68,6 +68,8 @@ Para una serie real, aumenta `--cycles` y conserva el intervalo predeterminado d
 
 API-Football informa dos límites distintos. `x-ratelimit-requests-remaining` corresponde al día y `X-RateLimit-Remaining` al minuto. Deben registrarse por separado: el primero protege el presupuesto total; el segundo controla la velocidad de llamadas.
 
+Los procesos por lotes comprueban la capacidad necesaria antes de comenzar el siguiente fixture. Si alcanzan la reserva diaria o el límite por minuto, terminan de forma reanudable; ejecutar nuevamente el mismo comando omite los resultados ya completos.
+
 Ejemplo de 16 capturas:
 
 ```powershell
@@ -157,6 +159,14 @@ python scripts/audit_data_quality.py
 ```
 
 El reporte se guarda en `data/raw/quality/report.json` e informa cobertura de campos, snapshots terminales, duplicados del reloj, hueco temporal máximo y cuántos fixtures permiten reconstruir al menos una ventana exacta de 10 minutos. Un campo ausente permanece ausente; no se convierte en cero.
+
+Para distinguir un partido sin escenario de un escenario perdido por falta de monitoreo:
+
+```powershell
+python scripts/audit_scenario_exposure.py --registry data/raw/eligible/AAAA-MM-DD.json
+```
+
+La auditoría reconstruye únicamente la trayectoria del marcador usando eventos finales y verifica que coincida con el resultado. Sirve para medir cobertura operativa; nunca se usa como información disponible para la regla en vivo.
 
 ## Entrega por Telegram
 
