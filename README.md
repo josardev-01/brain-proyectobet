@@ -4,11 +4,11 @@ Sistema para analizar partidos de fútbol en vivo, evaluar reglas configurables 
 
 ## Estado
 
-MVP integrado en desarrollo: adquisición y reglas operativas, base SQL versionada, API REST y dashboard Next.js. La heurística deportiva sigue pendiente de validación; esto no bloquea el desarrollo de producto.
+MVP integrado en desarrollo: adquisición y reglas operativas, base SQL versionada, API REST, autenticación multiusuario, estrategias declarativas, entregas Telegram y dashboard Next.js. La heurística deportiva sigue pendiente de validación; esto no bloquea el desarrollo de producto.
 
 ## Próximo hito
 
-Completar autenticación, administración multiusuario y ejecución de más tipos de objetivo mientras el worker reúne la muestra necesaria para medir:
+Validar el despliegue completo con PostgreSQL y conectar el primer canal Telegram mientras el worker reúne la muestra necesaria para medir:
 
 - cobertura y estadísticas disponibles;
 - frecuencia de actualización y latencia;
@@ -86,4 +86,4 @@ Cada usuario puede registrar uno o más `chat_id` de Telegram desde **Cuenta**. 
 
 Con Docker instalado, `docker compose up --build` inicia PostgreSQL, API y web. SQLite (`data/projectbet.db`) es únicamente el valor predeterminado local.
 
-Cada push y pull request ejecuta en GitHub Actions las pruebas del backend, verifica las migraciones, comprueba TypeScript y compila el frontend.
+Cada push y pull request ejecuta en GitHub Actions las pruebas del backend, verifica las migraciones, comprueba TypeScript y compila el frontend. `/health` confirma que el proceso API responde y `/ready` comprueba además la conexión con la base de datos.

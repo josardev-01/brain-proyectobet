@@ -45,6 +45,10 @@ class ApiTests(unittest.TestCase):
 
     def test_health_and_empty_dashboard(self) -> None:
         self.assertEqual(self.client.get("/health").status_code, 200)
+        self.assertEqual(
+            self.client.get("/ready").json(),
+            {"status": "ready", "database": "ok"},
+        )
         dashboard = self.client.get("/api/v1/dashboard")
         self.assertEqual(dashboard.status_code, 200)
         self.assertEqual(dashboard.json()["matches"], 0)
