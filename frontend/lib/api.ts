@@ -38,6 +38,7 @@ export type Strategy = {
   objective_subject: string;
   horizon_minutes: number;
   active: boolean;
+  owner_id?: number | null;
 };
 
 export type Snapshot = {
@@ -55,6 +56,18 @@ export type Snapshot = {
   corners_away: number | null;
   possession_home: number | null;
   possession_away: number | null;
+};
+
+export type StrategyEvaluation = {
+  strategy_id: number;
+  strategy_key: string;
+  strategy_version: number;
+  statistical_status: string;
+  matched: boolean | null;
+  reasons: string[];
+  missing_metrics: string[];
+  metrics: Record<string, unknown>;
+  error: string | null;
 };
 
 export type Alert = {

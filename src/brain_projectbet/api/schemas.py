@@ -50,6 +50,7 @@ class StrategyView(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
+    owner_id: int | None
     strategy_key: str
     version: int
     name: str
@@ -176,3 +177,15 @@ class NotificationEndpointView(BaseModel):
     label: str
     enabled: bool
     created_at: datetime
+
+
+class StrategyRuntimeView(BaseModel):
+    strategy_id: int
+    strategy_key: str
+    strategy_version: int
+    statistical_status: str
+    matched: bool | None
+    reasons: list[str] = Field(default_factory=list)
+    missing_metrics: list[str] = Field(default_factory=list)
+    metrics: dict[str, Any] = Field(default_factory=dict)
+    error: str | None = None

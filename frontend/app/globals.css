@@ -76,6 +76,8 @@ td { border-top: 1px solid var(--line); padding: 17px 12px; font-size: 12px; }
 .strategy-card > p { color: var(--muted); font-size: 12px; }
 .strategy-card footer { margin-top: auto; border-top: 1px solid var(--line); padding-top: 14px; display: flex; justify-content: space-between; color: var(--orange); font-size: 10px; }
 .strategy-card code { color: var(--muted); }
+.strategy-action { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.strategy-action small { color: var(--orange); }
 .alert-stack { display: grid; gap: 12px; }
 .alert-card { display: grid; grid-template-columns: 72px 1fr auto; align-items: center; gap: 20px; padding: 20px; }
 .alert-minute { font-family: var(--font-display); font-size: 32px; color: var(--acid); border-right: 1px solid var(--line); }
@@ -115,6 +117,10 @@ button { border: 0; border-radius: 9px; background: var(--acid); color: #10180e;
 .timeline-row > span { color: var(--acid); font: 600 20px var(--font-display); }
 .timeline-row small { display: block; color: var(--muted); margin-top: 5px; font-size: 10px; }
 .timeline-row time { color: var(--muted); font-size: 10px; }
+.evaluation-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 15px; }
+.evaluation-card h2 { margin: 0; font-size: 18px; }
+.evaluation-card > p { margin: 18px 0 5px; line-height: 1.6; }
+.evaluation-card > small { color: var(--orange); }
 
 @media (max-width: 1050px) {
   .hero-grid { grid-template-columns: repeat(2, 1fr); }
@@ -135,6 +141,7 @@ button { border: 0; border-radius: 9px; background: var(--acid); color: #10180e;
   .account-grid { grid-template-columns: 1fr; }
   .notification-form { grid-template-columns: 1fr; }
   .endpoint-row { grid-template-columns: 1fr auto; }
+  .evaluation-grid { grid-template-columns: 1fr; }
   .alert-card { grid-template-columns: 60px 1fr; }
   .alert-card > .tag { display: none; }
 }

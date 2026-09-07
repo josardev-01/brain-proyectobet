@@ -36,9 +36,13 @@ PostgreSQL es el destino productivo. SQLite utiliza el mismo modelo para desarro
 
 El API registra usuarios con contraseñas Argon2 y emite sesiones JWT con vencimiento. El navegador recibe el token en una cookie `HttpOnly` y `SameSite=Lax`; clientes externos también pueden usar el bearer devuelto. Crear o activar estrategias requiere autenticación y las estrategias de usuario solo pueden ser modificadas por su propietario. En producción es obligatorio definir `JWT_SECRET`.
 
+## Ejecución declarativa
+
+El runtime transforma snapshots normalizados en un diccionario estable de métricas: marcador, minuto, estado del favorito, acumulados y deltas exactos de ventana. Después evalúa expresiones declarativas activas. El endpoint de evaluaciones de partido expone resultado, razones, campos ausentes y estado estadístico, sin usar información futura.
+
 ## Límites actuales
 
 - Aún no hay recuperación de contraseña, verificación de correo ni roles administrativos.
-- El editor crea objetivos dinámicos y condiciones declarativas. El evaluador genérico soporta grupos `AND`, `OR`, `NOT` y comparadores seguros; el worker solo sabe construir automáticamente las métricas del adaptador `favorite_pressure` actual.
+- El editor crea objetivos dinámicos y condiciones declarativas. El evaluador genérico soporta grupos `AND`, `OR`, `NOT` y comparadores seguros; emitir y etiquetar alertas de un nuevo tipo de evento todavía requiere su contrato específico.
 - Las credenciales Telegram permanecen en variables de entorno; no se muestran ni guardan desde la UI.
 - El estado estadístico de la estrategia inicial sigue siendo `HEURÍSTICA`; la aplicación no lo presenta como probabilidad validada.

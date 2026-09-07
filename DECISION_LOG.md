@@ -189,3 +189,13 @@
 **Motivo:** Conserva el adaptador desacoplado, evita almacenar secretos del bot en la base y permite reintentos sin duplicar mensajes.
 
 **Impacto:** Las alertas de la estrategia global se pueden distribuir a todos los destinos activos. Cuando el worker ejecute estrategias privadas, deberá conservar el propietario en el evento para limitar sus destinatarios. Activar entregas reales requiere el token del bot y al menos un chat configurado.
+
+## DEC-022 — Contrato de métricas para ejecución declarativa
+
+**Problema:** Una expresión genérica no es ejecutable si cada regla conoce nombres o estructuras distintos para las estadísticas del partido.
+
+**Decisión:** Construir un diccionario estable desde el snapshot normalizado y una ventana temporal exacta. Las métricas distinguen favorito/oponente y publican acumulados, marcador, minuto, tarjetas, posesión y deltas con sufijo `last_N`. Si no existe historia suficiente, `window_complete=false` y las métricas de ventana ausentes no se inventan.
+
+**Motivo:** Desacopla el editor y evaluador tanto del proveedor como del caso inicial, y preserva causalidad temporal.
+
+**Impacto:** El API puede evaluar todas las estrategias declarativas activas contra un partido guardado y explicar por qué coinciden. La emisión automática exige además definir identidad, formato y etiquetador para cada tipo de evento objetivo.

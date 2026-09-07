@@ -17,6 +17,7 @@ from brain_projectbet.api.schemas import (
     RuleEvaluationView,
     SnapshotView,
     StrategyCreate,
+    StrategyRuntimeView,
     StrategyView,
     TokenView,
     UserLogin,
@@ -33,6 +34,7 @@ from brain_projectbet.database.models import (
     UserRecord,
 )
 from brain_projectbet.database.session import get_db
+from brain_projectbet.database.mappers import snapshot_record_to_domain
 from brain_projectbet.core.security import (
     create_access_token,
     get_current_user,
@@ -41,6 +43,7 @@ from brain_projectbet.core.security import (
 )
 from brain_projectbet.core.settings import get_settings
 from brain_projectbet.rules.expression import InvalidExpression, evaluate_expression
+from brain_projectbet.rules.runtime import evaluate_strategy_config
 
 
 router = APIRouter(prefix="/api/v1")
@@ -228,6 +231,53 @@ def list_match_snapshots(provider: str, fixture_id: str, session: Session = Depe
     return list(session.scalars(select(SnapshotRecord).where(
         SnapshotRecord.match_id == match.id
     ).order_by(SnapshotRecord.captured_at)))
+
+
+@router.get(
+    "/matches/{provider}/{fixture_id}/evaluations",
+    response_model=list[StrategyRuntimeView],
+)
+def list_match_evaluations(provider: str, fixture_id: str, session: Session = Depends(get_db)):
+    match = session.scalar(select(MatchRecord).where(
+        MatchRecord.provider == provider,
+        MatchRecord.provider_match_id == fixture_id,
+    ))
+    if match is None:
+        raise HTTPException(status_code=404, detail="partido no encontrado")
+    records = list(session.scalars(select(SnapshotRecord).where(
+        SnapshotRecord.match_id == match.id
+    ).order_by(SnapshotRecord.captured_at)))
+    snapshots = [snapshot_record_to_domain(match, record) for record in records]
+    strategies = list(session.scalars(select(StrategyRecord).where(
+        StrategyRecord.active.is_(True)
+    ).order_by(StrategyRecord.strategy_key, StrategyRecord.version.desc())))
+    evaluations = []
+    for strategy in strategies:
+        try:
+            result = evaluate_strategy_config(
+                strategy.config, snapshots, favorite_side=match.favorite_side
+            )
+        except InvalidExpression as error:
+            evaluations.append(StrategyRuntimeView(
+                strategy_id=strategy.id,
+                strategy_key=strategy.strategy_key,
+                strategy_version=strategy.version,
+                statistical_status=strategy.statistical_status,
+                matched=None,
+                error=str(error),
+            ))
+            continue
+        evaluations.append(StrategyRuntimeView(
+            strategy_id=strategy.id,
+            strategy_key=strategy.strategy_key,
+            strategy_version=strategy.version,
+            statistical_status=strategy.statistical_status,
+            matched=result.matched,
+            reasons=list(result.reasons),
+            missing_metrics=list(result.missing_metrics),
+            metrics=result.metrics,
+        ))
+    return evaluations
 
 
 @router.get("/strategies", response_model=list[StrategyView])

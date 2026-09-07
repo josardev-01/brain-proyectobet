@@ -1,11 +1,12 @@
 import { PageHeader } from "@/components/shell";
-import { apiGet, type Match, type Snapshot } from "@/lib/api";
+import { apiGet, type Match, type Snapshot, type StrategyEvaluation } from "@/lib/api";
 
 export default async function MatchDetail({ params }: { params: Promise<{ provider: string; fixtureId: string }> }) {
   const { provider, fixtureId } = await params;
-  const [{ data: match, online }, { data: snapshots }] = await Promise.all([
+  const [{ data: match, online }, { data: snapshots }, { data: evaluations }] = await Promise.all([
     apiGet<Match | null>(`/matches/${provider}/${fixtureId}`, null),
     apiGet<Snapshot[]>(`/matches/${provider}/${fixtureId}/snapshots`, []),
+    apiGet<StrategyEvaluation[]>(`/matches/${provider}/${fixtureId}/evaluations`, []),
   ]);
   if (!match) return <><PageHeader eyebrow="Partido" title={`Fixture ${fixtureId}`} copy="No se encontró este partido en la base." online={online} /></>;
   const latest = snapshots.at(-1);
@@ -20,5 +21,10 @@ export default async function MatchDetail({ params }: { params: Promise<{ provid
     <section className="panel timeline"><div className="panel-head"><div><p className="eyebrow">Historia</p><h2>Snapshots disponibles</h2></div><b>{snapshots.length}</b></div>
       {snapshots.map((snapshot, index) => <div className="timeline-row" key={`${snapshot.captured_at}-${index}`}><span>{snapshot.minute ?? "–"}&apos;</span><div><b>{snapshot.score_home ?? "–"} : {snapshot.score_away ?? "–"}</b><small>SOT {snapshot.shots_on_target_home ?? "–"}:{snapshot.shots_on_target_away ?? "–"} · tiros {snapshot.shots_home ?? "–"}:{snapshot.shots_away ?? "–"} · corners {snapshot.corners_home ?? "–"}:{snapshot.corners_away ?? "–"}</small></div><time>{new Date(snapshot.captured_at).toLocaleTimeString("es-PY")}</time></div>)}
     </section>
+    <section className="evaluation-grid">{evaluations.map(item => <article className="panel evaluation-card" key={item.strategy_id}>
+      <div className="panel-head"><div><p className="eyebrow">{item.statistical_status}</p><h2>{item.strategy_key} · v{item.strategy_version}</h2></div><span className={`tag ${item.matched ? "active" : ""}`}>{item.matched === null ? "NO DECLARATIVA" : item.matched ? "COINCIDE" : "NO COINCIDE"}</span></div>
+      <p className="muted">{item.error ?? item.reasons.join(" · ")}</p>
+      {item.missing_metrics.length > 0 && <small>Datos ausentes: {item.missing_metrics.join(", ")}</small>}
+    </article>)}</section>
   </>;
 }
