@@ -11,6 +11,8 @@ from brain_projectbet.api.schemas import (
     AlertView,
     DashboardView,
     MatchSummary,
+    NotificationEndpointCreate,
+    NotificationEndpointView,
     RuleEvaluationRequest,
     RuleEvaluationView,
     SnapshotView,
@@ -25,6 +27,7 @@ from brain_projectbet.database.models import (
     AlertRecord,
     BacktestRecordModel,
     MatchRecord,
+    NotificationEndpointRecord,
     SnapshotRecord,
     StrategyRecord,
     UserRecord,
@@ -87,6 +90,76 @@ def me(user: UserRecord = Depends(get_current_user)):
 @router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(response: Response):
     response.delete_cookie("projectbet_session")
+
+
+@router.get("/notification-endpoints", response_model=list[NotificationEndpointView])
+def list_notification_endpoints(
+    session: Session = Depends(get_db),
+    user: UserRecord = Depends(get_current_user),
+):
+    return list(session.scalars(select(NotificationEndpointRecord).where(
+        NotificationEndpointRecord.owner_id == user.id
+    ).order_by(NotificationEndpointRecord.created_at)))
+
+
+@router.post(
+    "/notification-endpoints",
+    response_model=NotificationEndpointView,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_notification_endpoint(
+    payload: NotificationEndpointCreate,
+    session: Session = Depends(get_db),
+    user: UserRecord = Depends(get_current_user),
+):
+    endpoint = NotificationEndpointRecord(
+        owner_id=user.id,
+        channel=payload.channel,
+        destination=payload.destination,
+        label=payload.label.strip(),
+        enabled=payload.enabled,
+        created_at=datetime.now(UTC),
+    )
+    session.add(endpoint)
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(status_code=409, detail="ese destino ya está configurado")
+    session.refresh(endpoint)
+    return endpoint
+
+
+@router.patch(
+    "/notification-endpoints/{endpoint_id}/activation",
+    response_model=NotificationEndpointView,
+)
+def set_notification_endpoint_activation(
+    endpoint_id: int,
+    enabled: bool,
+    session: Session = Depends(get_db),
+    user: UserRecord = Depends(get_current_user),
+):
+    endpoint = session.get(NotificationEndpointRecord, endpoint_id)
+    if endpoint is None or endpoint.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="destino no encontrado")
+    endpoint.enabled = enabled
+    session.commit()
+    session.refresh(endpoint)
+    return endpoint
+
+
+@router.delete("/notification-endpoints/{endpoint_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_notification_endpoint(
+    endpoint_id: int,
+    session: Session = Depends(get_db),
+    user: UserRecord = Depends(get_current_user),
+):
+    endpoint = session.get(NotificationEndpointRecord, endpoint_id)
+    if endpoint is None or endpoint.owner_id != user.id:
+        raise HTTPException(status_code=404, detail="destino no encontrado")
+    session.delete(endpoint)
+    session.commit()
 
 
 @router.get("/dashboard", response_model=DashboardView)

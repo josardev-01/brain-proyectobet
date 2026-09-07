@@ -121,6 +121,24 @@ class ApiTests(unittest.TestCase):
         response = self.client.post("/api/v1/strategies", json={})
         self.assertIn(response.status_code, (401, 422))
 
+    def test_manages_owned_notification_endpoint(self) -> None:
+        self.auth_headers()
+        created = self.client.post("/api/v1/notification-endpoints", json={
+            "channel": "telegram", "destination": "-123456", "label": "Principal",
+        })
+        self.assertEqual(created.status_code, 201)
+        endpoint_id = created.json()["id"]
+        listed = self.client.get("/api/v1/notification-endpoints")
+        self.assertEqual(listed.json()[0]["destination"], "-123456")
+        disabled = self.client.patch(
+            f"/api/v1/notification-endpoints/{endpoint_id}/activation?enabled=false"
+        )
+        self.assertFalse(disabled.json()["enabled"])
+        self.assertEqual(
+            self.client.delete(f"/api/v1/notification-endpoints/{endpoint_id}").status_code,
+            204,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

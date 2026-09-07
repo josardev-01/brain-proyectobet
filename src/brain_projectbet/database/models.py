@@ -19,6 +19,21 @@ class UserRecord(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
+class NotificationEndpointRecord(Base):
+    __tablename__ = "notification_endpoints"
+    __table_args__ = (
+        UniqueConstraint("owner_id", "channel", "destination", name="uq_notification_destination"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    channel: Mapped[str] = mapped_column(String(30))
+    destination: Mapped[str] = mapped_column(String(180))
+    label: Mapped[str] = mapped_column(String(120), default="")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
 class MatchRecord(Base):
     __tablename__ = "matches"
     __table_args__ = (
@@ -117,6 +132,25 @@ class AlertRecord(Base):
     score_opponent: Mapped[int] = mapped_column(Integer)
     delivery_status: Mapped[str] = mapped_column(String(20), default="PENDING")
     explanation: Mapped[dict] = mapped_column(JSON)
+
+
+class NotificationDeliveryRecord(Base):
+    __tablename__ = "notification_deliveries"
+    __table_args__ = (
+        UniqueConstraint("alert_id", "endpoint_id", name="uq_alert_endpoint_delivery"),
+        Index("ix_notification_delivery_status", "status"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    alert_id: Mapped[str] = mapped_column(ForeignKey("alerts.alert_id", ondelete="CASCADE"))
+    endpoint_id: Mapped[int] = mapped_column(
+        ForeignKey("notification_endpoints.id", ondelete="CASCADE")
+    )
+    status: Mapped[str] = mapped_column(String(20), default="PENDING")
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str | None] = mapped_column(String(240), nullable=True)
+    sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
 
 class BacktestRecordModel(Base):

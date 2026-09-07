@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { PageHeader } from "@/components/shell";
+import { NotificationSettings } from "@/components/notification-settings";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
@@ -48,7 +49,7 @@ export default function AccountPage() {
 
   return <>
     <PageHeader eyebrow="Identidad" title="Cuenta" copy="Protege la creación y activación de estrategias." />
-    {user ? <section className="panel account-card"><p className="eyebrow">Sesión activa</p><h2>{user.display_name}</h2><p>{user.email}</p><button onClick={logout}>Cerrar sesión</button></section>
+    {user ? <div className="account-grid"><section className="panel account-card"><p className="eyebrow">Sesión activa</p><h2>{user.display_name}</h2><p>{user.email}</p><button onClick={logout}>Cerrar sesión</button></section><NotificationSettings /></div>
       : <form className="panel auth-form" onSubmit={submit}>
         <div className="panel-head"><div><p className="eyebrow">Acceso</p><h2>{mode === "login" ? "Iniciar sesión" : "Crear cuenta"}</h2></div><button className="quiet" type="button" onClick={() => setMode(mode === "login" ? "register" : "login")}>{mode === "login" ? "Registrarme" : "Ya tengo cuenta"}</button></div>
         <div className="form-grid auth-fields">

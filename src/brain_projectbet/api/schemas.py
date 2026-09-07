@@ -158,3 +158,21 @@ class TokenView(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     user: UserView
+
+
+class NotificationEndpointCreate(BaseModel):
+    channel: Literal["telegram"] = "telegram"
+    destination: str = Field(min_length=2, max_length=180, pattern=r"^-?\d+$")
+    label: str = Field(default="", max_length=120)
+    enabled: bool = True
+
+
+class NotificationEndpointView(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    channel: str
+    destination: str
+    label: str
+    enabled: bool
+    created_at: datetime

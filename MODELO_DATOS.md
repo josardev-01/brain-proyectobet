@@ -9,6 +9,8 @@
 | `snapshots` | Serie temporal de estadísticas | partido + instante de captura |
 | `strategies` | Configuración inmutable y versionada | clave + versión |
 | `alerts` | Trigger explicable y estado de entrega | id de deduplicación |
+| `notification_endpoints` | Destinos Telegram habilitados por usuario | usuario + canal + destino |
+| `notification_deliveries` | Intentos y recibos por alerta/destino | alerta + destino |
 | `backtest_results` | Evidencia experimental por versión | id de replay |
 
 Los campos estadísticos ausentes son nulos. Esto distingue “cero observado” de “dato no disponible”. `JSON` conserva configuración extensible y explicación, pero los campos usados para buscar, ordenar o relacionar están tipados como columnas.
@@ -20,6 +22,7 @@ Los campos estadísticos ausentes son nulos. Esto distingue “cero observado”
 - Una versión de estrategia no se sobrescribe: el cambio crea otra versión.
 - Una estrategia creada desde el API queda vinculada a su propietario.
 - Una alerta conserva la identidad ya usada por `trigger once`.
+- Una entrega exitosa no vuelve a enviarse al mismo destino; los fallos quedan reintentables.
 - El resultado de backtesting es único por partido, objetivo y versiones.
 
 La migración inicial se encuentra en `migrations/versions/`. Cambios posteriores deben generar otra revisión de Alembic; nunca se editará el esquema productivo manualmente.

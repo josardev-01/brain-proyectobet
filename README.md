@@ -52,6 +52,7 @@ python scripts/summarize_backtests.py
 python scripts/audit_data_quality.py
 python scripts/audit_scenario_exposure.py --registry data/raw/eligible/AAAA-MM-DD.json
 python scripts/send_pending_alerts.py --dry-run
+python scripts/send_database_alerts.py --maximum 20
 ```
 
 El flujo descubre favoritos claros, monitorea únicamente los escenarios relevantes, finaliza partidos con eventos exactos, registra resultados para backtesting y conserva las alertas en una bandeja entregable por Telegram.
@@ -80,5 +81,7 @@ pnpm dev
 ```
 
 API: `http://localhost:8000`, documentación OpenAPI: `http://localhost:8000/docs`, frontend: `http://localhost:3000`.
+
+Cada usuario puede registrar uno o más `chat_id` de Telegram desde **Cuenta**. El token del bot es global y permanece en `TELEGRAM_BOT_TOKEN`; `send_database_alerts.py` entrega cada alerta una sola vez por destino y conserva los reintentos en la base.
 
 Con Docker instalado, `docker compose up --build` inicia PostgreSQL, API y web. SQLite (`data/projectbet.db`) es únicamente el valor predeterminado local.

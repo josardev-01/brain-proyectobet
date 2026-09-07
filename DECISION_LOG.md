@@ -179,3 +179,13 @@
 **Motivo:** Es un límite de seguridad suficiente para el siguiente incremento multiusuario sin acoplar el dominio deportivo al mecanismo de autenticación.
 
 **Impacto:** Quedan pendientes verificación de correo, recuperación de contraseña, rotación/refresh de sesiones, protección CSRF adicional si la aplicación se distribuye entre sitios distintos y roles administrativos.
+
+## DEC-021 — Destinos Telegram por usuario y recibos en base de datos
+
+**Problema:** Un único `TELEGRAM_CHAT_ID` global no permite que distintos usuarios administren destinos y el recibo basado en archivos no expresa entregas por destinatario.
+
+**Decisión:** Mantener un token de bot global exclusivamente en variables de entorno y guardar únicamente identificadores de chat asociados al usuario. Cada par alerta/destino tiene un recibo único con estado, intentos, error sanitizado y fecha de entrega. Un usuario solo administra sus propios destinos.
+
+**Motivo:** Conserva el adaptador desacoplado, evita almacenar secretos del bot en la base y permite reintentos sin duplicar mensajes.
+
+**Impacto:** Las alertas de la estrategia global se pueden distribuir a todos los destinos activos. Cuando el worker ejecute estrategias privadas, deberá conservar el propietario en el evento para limitar sus destinatarios. Activar entregas reales requiere el token del bot y al menos un chat configurado.

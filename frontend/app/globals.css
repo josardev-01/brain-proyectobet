@@ -99,6 +99,16 @@ button { border: 0; border-radius: 9px; background: var(--acid); color: #10180e;
 .account-card { max-width: 560px; }
 .account-card h2 { font-size: 30px; margin-bottom: 5px; }
 .account-card > p:not(.eyebrow) { color: var(--muted); margin-bottom: 28px; }
+.account-grid { display: grid; grid-template-columns: .7fr 1.3fr; gap: 15px; align-items: start; }
+.settings-copy { margin: 15px 0; }
+.notification-form { grid-template-columns: 1fr 1.2fr auto; align-items: end; }
+.notification-form button { height: 38px; }
+.form-message { color: var(--mint); font-size: 11px; }
+.endpoint-list { margin-top: 18px; }
+.endpoint-row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 9px; align-items: center; padding: 13px 0; border-top: 1px solid var(--line); }
+.endpoint-row small { display: block; color: var(--muted); margin-top: 4px; }
+.endpoint-row button { padding: 8px 10px; }
+.danger { color: #ffad88; background: rgba(255,139,82,.08); border: 1px solid rgba(255,139,82,.18); }
 .detail-metrics { margin-bottom: 15px; }
 .timeline { margin-top: 15px; }
 .timeline-row { display: grid; grid-template-columns: 60px 1fr auto; gap: 16px; align-items: center; border-top: 1px solid var(--line); padding: 15px 3px; }
@@ -122,6 +132,9 @@ button { border: 0; border-radius: 9px; background: var(--acid); color: #10180e;
   .hero-grid, .card-grid { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .form-grid .wide { grid-column: auto; }
+  .account-grid { grid-template-columns: 1fr; }
+  .notification-form { grid-template-columns: 1fr; }
+  .endpoint-row { grid-template-columns: 1fr auto; }
   .alert-card { grid-template-columns: 60px 1fr; }
   .alert-card > .tag { display: none; }
 }
