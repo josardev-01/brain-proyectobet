@@ -4,10 +4,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 
 from brain_projectbet.api.main import create_app
-from brain_projectbet.database.models import MatchRecord
+from brain_projectbet.core.security import hash_password
+from brain_projectbet.database.models import MatchRecord, UserRecord
 from brain_projectbet.database.session import Base, build_engine, get_db
 
 
@@ -36,10 +38,32 @@ class ApiTests(unittest.TestCase):
         self.directory.cleanup()
 
     def auth_headers(self) -> dict[str, str]:
-        response = self.client.post("/api/v1/auth/register", json={
+        self.client.post("/api/v1/auth/register", json={
             "email": "owner@example.com",
             "display_name": "Owner",
             "password": "a-secure-password",
+        })
+        with self.sessions.begin() as session:
+            user = session.scalar(select(UserRecord).where(UserRecord.email == "owner@example.com"))
+            user.approval_status = "APPROVED"
+        response = self.client.post("/api/v1/auth/login", json={
+            "email": "owner@example.com", "password": "a-secure-password",
+        })
+        return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+    def admin_headers(self) -> dict[str, str]:
+        with self.sessions.begin() as session:
+            session.add(UserRecord(
+                email="admin@example.com",
+                display_name="Admin",
+                password_hash=hash_password("admin-password"),
+                active=True,
+                role="ADMIN",
+                approval_status="APPROVED",
+                created_at=datetime.now(UTC),
+            ))
+        response = self.client.post("/api/v1/auth/login", json={
+            "email": "admin@example.com", "password": "admin-password",
         })
         return {"Authorization": f"Bearer {response.json()['access_token']}"}
 
@@ -120,6 +144,40 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(login.status_code, 200)
         self.assertEqual(self.client.post("/api/v1/auth/logout").status_code, 204)
         self.assertEqual(self.client.get("/api/v1/auth/me").status_code, 401)
+
+    def test_registration_stays_pending_until_admin_approval(self) -> None:
+        registered = self.client.post("/api/v1/auth/register", json={
+            "email": "candidate@example.com",
+            "display_name": "Candidate",
+            "password": "candidate-password",
+        })
+        self.assertEqual(registered.status_code, 201)
+        self.assertEqual(registered.json()["status"], "PENDING")
+        denied = self.client.post("/api/v1/auth/login", json={
+            "email": "candidate@example.com", "password": "candidate-password",
+        })
+        self.assertEqual(denied.status_code, 403)
+        self.assertEqual(denied.json()["detail"], "cuenta pendiente de aprobación")
+
+        headers = self.admin_headers()
+        pending = self.client.get("/api/v1/admin/users", headers=headers)
+        self.assertEqual(pending.status_code, 200)
+        candidate = next(user for user in pending.json() if user["email"] == "candidate@example.com")
+        approved = self.client.patch(
+            f"/api/v1/admin/users/{candidate['id']}/approval",
+            headers=headers,
+            json={"approval_status": "APPROVED"},
+        )
+        self.assertEqual(approved.status_code, 200)
+        self.assertEqual(approved.json()["reviewed_by_id"], 2)
+        login = self.client.post("/api/v1/auth/login", json={
+            "email": "candidate@example.com", "password": "candidate-password",
+        })
+        self.assertEqual(login.status_code, 200)
+
+    def test_regular_user_cannot_review_accounts(self) -> None:
+        response = self.client.get("/api/v1/admin/users", headers=self.auth_headers())
+        self.assertEqual(response.status_code, 403)
 
     def test_strategy_write_requires_authentication(self) -> None:
         response = self.client.post("/api/v1/strategies", json={})

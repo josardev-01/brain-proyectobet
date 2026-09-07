@@ -101,7 +101,13 @@ button { border: 0; border-radius: 9px; background: var(--acid); color: #10180e;
 .account-card { max-width: 560px; }
 .account-card h2 { font-size: 30px; margin-bottom: 5px; }
 .account-card > p:not(.eyebrow) { color: var(--muted); margin-bottom: 28px; }
+.account-card > .tag { display: inline-block; margin: 0 10px 20px 0; }
+.account-card > button { display: block; }
 .account-grid { display: grid; grid-template-columns: .7fr 1.3fr; gap: 15px; align-items: start; }
+.admin-approvals { grid-column: 1 / -1; }
+.approval-row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 10px; align-items: center; padding: 13px 0; border-top: 1px solid var(--line); }
+.approval-row small { display: block; color: var(--muted); margin-top: 4px; }
+.approval-row time { color: var(--muted); font-size: 10px; }
 .settings-copy { margin: 15px 0; }
 .notification-form { grid-template-columns: 1fr 1.2fr auto; align-items: end; }
 .notification-form button { height: 38px; }
@@ -141,6 +147,7 @@ button { border: 0; border-radius: 9px; background: var(--acid); color: #10180e;
   .account-grid { grid-template-columns: 1fr; }
   .notification-form { grid-template-columns: 1fr; }
   .endpoint-row { grid-template-columns: 1fr auto; }
+  .approval-row { grid-template-columns: 1fr auto; }
   .evaluation-grid { grid-template-columns: 1fr; }
   .alert-card { grid-template-columns: 60px 1fr; }
   .alert-card > .tag { display: none; }

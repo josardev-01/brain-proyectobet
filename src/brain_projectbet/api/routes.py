@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, select
@@ -13,6 +14,7 @@ from brain_projectbet.api.schemas import (
     MatchSummary,
     NotificationEndpointCreate,
     NotificationEndpointView,
+    RegistrationView,
     RuleEvaluationRequest,
     RuleEvaluationView,
     SnapshotView,
@@ -21,6 +23,7 @@ from brain_projectbet.api.schemas import (
     StrategyView,
     TokenView,
     UserLogin,
+    UserApprovalUpdate,
     UserRegister,
     UserView,
 )
@@ -39,6 +42,7 @@ from brain_projectbet.core.security import (
     create_access_token,
     get_current_user,
     hash_password,
+    require_admin,
     verify_password,
 )
 from brain_projectbet.core.settings import get_settings
@@ -49,8 +53,8 @@ from brain_projectbet.rules.runtime import evaluate_strategy_config
 router = APIRouter(prefix="/api/v1")
 
 
-@router.post("/auth/register", response_model=TokenView, status_code=status.HTTP_201_CREATED)
-def register(payload: UserRegister, response: Response, session: Session = Depends(get_db)):
+@router.post("/auth/register", response_model=RegistrationView, status_code=status.HTTP_201_CREATED)
+def register(payload: UserRegister, session: Session = Depends(get_db)):
     normalized_email = payload.email.strip().lower()
     if session.scalar(select(UserRecord).where(UserRecord.email == normalized_email)) is not None:
         raise HTTPException(status_code=409, detail="el correo ya está registrado")
@@ -59,24 +63,30 @@ def register(payload: UserRegister, response: Response, session: Session = Depen
         display_name=payload.display_name.strip(),
         password_hash=hash_password(payload.password),
         active=True,
+        role="USER",
+        approval_status="PENDING",
         created_at=datetime.now(UTC),
     )
     session.add(user)
     session.commit()
     session.refresh(user)
-    token, expires_in = create_access_token(user.id)
-    response.set_cookie(
-        "projectbet_session", token, max_age=expires_in, httponly=True,
-        secure=get_settings().environment == "production", samesite="lax",
+    return RegistrationView(
+        message="solicitud recibida; un administrador debe aprobar la cuenta",
+        user=user,
     )
-    return TokenView(access_token=token, expires_in=expires_in, user=user)
 
 
 @router.post("/auth/login", response_model=TokenView)
 def login(payload: UserLogin, response: Response, session: Session = Depends(get_db)):
     user = session.scalar(select(UserRecord).where(UserRecord.email == payload.email.strip().lower()))
-    if user is None or not user.active or not verify_password(payload.password, user.password_hash):
+    if user is None or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="credenciales inválidas")
+    if user.approval_status == "PENDING":
+        raise HTTPException(status_code=403, detail="cuenta pendiente de aprobación")
+    if user.approval_status == "REJECTED":
+        raise HTTPException(status_code=403, detail="solicitud de cuenta rechazada")
+    if not user.active:
+        raise HTTPException(status_code=403, detail="cuenta desactivada")
     token, expires_in = create_access_token(user.id)
     response.set_cookie(
         "projectbet_session", token, max_age=expires_in, httponly=True,
@@ -93,6 +103,38 @@ def me(user: UserRecord = Depends(get_current_user)):
 @router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(response: Response):
     response.delete_cookie("projectbet_session")
+
+
+@router.get("/admin/users", response_model=list[UserView])
+def list_users_for_review(
+    approval_status: Literal["PENDING", "APPROVED", "REJECTED"] | None = Query(default="PENDING"),
+    session: Session = Depends(get_db),
+    _: UserRecord = Depends(require_admin),
+):
+    query = select(UserRecord).order_by(UserRecord.created_at)
+    if approval_status is not None:
+        query = query.where(UserRecord.approval_status == approval_status)
+    return list(session.scalars(query))
+
+
+@router.patch("/admin/users/{user_id}/approval", response_model=UserView)
+def review_user(
+    user_id: int,
+    payload: UserApprovalUpdate,
+    session: Session = Depends(get_db),
+    admin: UserRecord = Depends(require_admin),
+):
+    user = session.get(UserRecord, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="usuario no encontrado")
+    if user.id == admin.id and payload.approval_status == "REJECTED":
+        raise HTTPException(status_code=409, detail="un administrador no puede rechazarse a sí mismo")
+    user.approval_status = payload.approval_status
+    user.reviewed_at = datetime.now(UTC)
+    user.reviewed_by_id = admin.id
+    session.commit()
+    session.refresh(user)
+    return user
 
 
 @router.get("/notification-endpoints", response_model=list[NotificationEndpointView])

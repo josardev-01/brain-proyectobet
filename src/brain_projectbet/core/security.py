@@ -58,6 +58,12 @@ def get_current_user(
     except (jwt.PyJWTError, KeyError, TypeError, ValueError):
         raise unauthorized
     user = session.get(UserRecord, user_id)
-    if user is None or not user.active:
+    if user is None or not user.active or user.approval_status != "APPROVED":
         raise unauthorized
+    return user
+
+
+def require_admin(user: UserRecord = Depends(get_current_user)) -> UserRecord:
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="se requiere rol de administrador")
     return user

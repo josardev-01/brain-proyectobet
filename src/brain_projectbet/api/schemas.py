@@ -151,7 +151,17 @@ class UserView(BaseModel):
     email: str
     display_name: str
     active: bool
+    role: str
+    approval_status: str
+    reviewed_at: datetime | None
+    reviewed_by_id: int | None
     created_at: datetime
+
+
+class RegistrationView(BaseModel):
+    status: Literal["PENDING"] = "PENDING"
+    message: str
+    user: UserView
 
 
 class TokenView(BaseModel):
@@ -159,6 +169,10 @@ class TokenView(BaseModel):
     token_type: str = "bearer"
     expires_in: int
     user: UserView
+
+
+class UserApprovalUpdate(BaseModel):
+    approval_status: Literal["APPROVED", "REJECTED"]
 
 
 class NotificationEndpointCreate(BaseModel):

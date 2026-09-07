@@ -82,7 +82,14 @@ pnpm dev
 
 API: `http://localhost:8000`, documentación OpenAPI: `http://localhost:8000/docs`, frontend: `http://localhost:3000`.
 
-Cada usuario puede registrar uno o más `chat_id` de Telegram desde **Cuenta**. El token del bot es global y permanece en `TELEGRAM_BOT_TOKEN`; `send_database_alerts.py` entrega cada alerta una sola vez por destino y conserva los reintentos en la base.
+Cada usuario aprobado puede registrar uno o más `chat_id` de Telegram desde **Cuenta**. El token del bot es global y permanece en `TELEGRAM_BOT_TOKEN`; `send_database_alerts.py` entrega cada alerta una sola vez por destino y conserva los reintentos en la base.
+
+El registro público crea solicitudes pendientes. El administrador inicial se crea o promueve de forma interactiva, sin exponer su contraseña:
+
+```powershell
+$env:PYTHONPATH = "src"
+.\.venv\Scripts\python scripts\bootstrap_admin.py --email administrador@ejemplo.com --display-name "Administrador" --telegram-chat-id 123456789
+```
 
 Con Docker instalado, `docker compose up --build` inicia PostgreSQL, API y web. SQLite (`data/projectbet.db`) es únicamente el valor predeterminado local.
 

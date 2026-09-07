@@ -199,3 +199,15 @@
 **Motivo:** Desacopla el editor y evaluador tanto del proveedor como del caso inicial, y preserva causalidad temporal.
 
 **Impacto:** El API puede evaluar todas las estrategias declarativas activas contra un partido guardado y explicar por qué coinciden. La emisión automática exige además definir identidad, formato y etiquetador para cada tipo de evento objetivo.
+
+## DEC-023 — Registro público sujeto a aprobación administrativa
+
+**Problema:** El producto necesita permitir solicitudes públicas sin conceder acceso inmediato a datos, estrategias ni destinos de notificación.
+
+**Opciones:** Registro abierto con acceso inmediato, invitaciones cerradas o registro público con revisión manual.
+
+**Decisión:** Cada registro nuevo queda en estado `PENDING` y no recibe sesión. Un usuario `ADMIN` puede aprobarlo o rechazarlo desde la aplicación. El primer administrador se provisiona mediante un comando local con contraseña oculta, nunca desde el endpoint público.
+
+**Motivo:** Permite crecimiento controlado durante el MVP, evita que cualquiera obtenga permisos automáticamente y no hace depender el acceso inicial de un servicio de correo todavía inexistente.
+
+**Impacto:** Los usuarios migrados conservan acceso aprobado. El API registra estado, revisor y fecha de revisión. Hasta incorporar correo, el solicitante consulta posteriormente su acceso intentando iniciar sesión; recuperación de contraseña y avisos automáticos siguen pendientes.
