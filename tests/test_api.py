@@ -35,6 +35,14 @@ class ApiTests(unittest.TestCase):
         self.engine.dispose()
         self.directory.cleanup()
 
+    def auth_headers(self) -> dict[str, str]:
+        response = self.client.post("/api/v1/auth/register", json={
+            "email": "owner@example.com",
+            "display_name": "Owner",
+            "password": "a-secure-password",
+        })
+        return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
     def test_health_and_empty_dashboard(self) -> None:
         self.assertEqual(self.client.get("/health").status_code, 200)
         dashboard = self.client.get("/api/v1/dashboard")
@@ -72,8 +80,9 @@ class ApiTests(unittest.TestCase):
             "horizon_minutes": 10,
             "config": {"strategy_id": "corner_pressure", "version": 1},
         }
-        self.assertEqual(self.client.post("/api/v1/strategies", json=payload).status_code, 201)
-        self.assertEqual(self.client.post("/api/v1/strategies", json=payload).status_code, 409)
+        headers = self.auth_headers()
+        self.assertEqual(self.client.post("/api/v1/strategies", json=payload, headers=headers).status_code, 201)
+        self.assertEqual(self.client.post("/api/v1/strategies", json=payload, headers=headers).status_code, 409)
 
     def test_rejects_mismatched_strategy_config(self) -> None:
         payload = {
@@ -85,7 +94,7 @@ class ApiTests(unittest.TestCase):
             "horizon_minutes": 10,
             "config": {"strategy_id": "other", "version": 2},
         }
-        self.assertEqual(self.client.post("/api/v1/strategies", json=payload).status_code, 422)
+        self.assertEqual(self.client.post("/api/v1/strategies", json=payload, headers=self.auth_headers()).status_code, 422)
 
     def test_evaluates_declarative_rule(self) -> None:
         response = self.client.post("/api/v1/rules/evaluate", json={
@@ -94,6 +103,23 @@ class ApiTests(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["matched"])
+
+    def test_register_login_and_current_user(self) -> None:
+        headers = self.auth_headers()
+        current = self.client.get("/api/v1/auth/me", headers=headers)
+        self.assertEqual(current.status_code, 200)
+        self.assertEqual(current.json()["email"], "owner@example.com")
+        self.assertEqual(self.client.get("/api/v1/auth/me").status_code, 200)
+        login = self.client.post("/api/v1/auth/login", json={
+            "email": "owner@example.com", "password": "a-secure-password",
+        })
+        self.assertEqual(login.status_code, 200)
+        self.assertEqual(self.client.post("/api/v1/auth/logout").status_code, 204)
+        self.assertEqual(self.client.get("/api/v1/auth/me").status_code, 401)
+
+    def test_strategy_write_requires_authentication(self) -> None:
+        response = self.client.post("/api/v1/strategies", json={})
+        self.assertIn(response.status_code, (401, 422))
 
 
 if __name__ == "__main__":

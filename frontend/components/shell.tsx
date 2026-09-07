@@ -6,6 +6,7 @@ const links = [
   ["/matches", "Partidos"],
   ["/strategies", "Estrategias"],
   ["/alerts", "Alertas"],
+  ["/account", "Cuenta"],
 ];
 
 export function Shell({ children }: { children: ReactNode }) {

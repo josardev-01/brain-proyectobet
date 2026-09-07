@@ -93,6 +93,12 @@ input:focus, select:focus { border-color: rgba(86,239,189,.5); }
 .form-actions { display: flex; justify-content: flex-end; align-items: center; gap: 18px; margin-top: 18px; }
 .form-actions p { color: var(--muted); font-size: 11px; }
 button { border: 0; border-radius: 9px; background: var(--acid); color: #10180e; padding: 11px 18px; font: 800 11px var(--font-body); cursor: pointer; }
+.quiet { color: var(--mint); background: transparent; border: 1px solid var(--line); }
+.auth-form { max-width: 760px; }
+.auth-fields { grid-template-columns: repeat(2, 1fr); }
+.account-card { max-width: 560px; }
+.account-card h2 { font-size: 30px; margin-bottom: 5px; }
+.account-card > p:not(.eyebrow) { color: var(--muted); margin-bottom: 28px; }
 .detail-metrics { margin-bottom: 15px; }
 .timeline { margin-top: 15px; }
 .timeline-row { display: grid; grid-template-columns: 60px 1fr auto; gap: 16px; align-items: center; border-top: 1px solid var(--line); padding: 15px 3px; }

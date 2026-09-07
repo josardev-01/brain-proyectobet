@@ -130,3 +130,31 @@ class RuleEvaluationView(BaseModel):
     matched: bool
     reasons: list[str]
     missing_metrics: list[str]
+
+
+class UserRegister(BaseModel):
+    email: str = Field(min_length=5, max_length=254, pattern=r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+    display_name: str = Field(min_length=2, max_length=120)
+    password: str = Field(min_length=10, max_length=128)
+
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+
+class UserView(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    email: str
+    display_name: str
+    active: bool
+    created_at: datetime
+
+
+class TokenView(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    user: UserView

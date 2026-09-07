@@ -25,6 +25,7 @@ export function StrategyForm() {
     const response = await fetch(`${API_URL}/strategies`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify({
         strategy_key: strategyKey,
         version,
@@ -51,7 +52,7 @@ export function StrategyForm() {
     });
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      setMessage(error.detail === "esa versión de estrategia ya existe" ? error.detail : "No se pudo guardar. Revisa los campos y la conexión.");
+      setMessage(response.status === 401 ? "Inicia sesión en Cuenta para crear estrategias." : error.detail === "esa versión de estrategia ya existe" ? error.detail : "No se pudo guardar. Revisa los campos y la conexión.");
       return;
     }
     event.currentTarget.reset();

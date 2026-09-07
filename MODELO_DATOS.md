@@ -4,7 +4,7 @@
 
 | Tabla | Propósito | Identidad estable |
 |---|---|---|
-| `users` | Propietarios futuros de estrategias | correo único |
+| `users` | Identidades autenticadas y propietarias de estrategias | correo único |
 | `matches` | Partido normalizado y estado reciente | proveedor + id externo |
 | `snapshots` | Serie temporal de estadísticas | partido + instante de captura |
 | `strategies` | Configuración inmutable y versionada | clave + versión |
@@ -18,6 +18,7 @@ Los campos estadísticos ausentes son nulos. Esto distingue “cero observado”
 - Un proveedor no puede insertar dos veces el mismo partido.
 - Un snapshot no se duplica para el mismo partido e instante.
 - Una versión de estrategia no se sobrescribe: el cambio crea otra versión.
+- Una estrategia creada desde el API queda vinculada a su propietario.
 - Una alerta conserva la identidad ya usada por `trigger once`.
 - El resultado de backtesting es único por partido, objetivo y versiones.
 

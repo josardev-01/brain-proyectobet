@@ -169,3 +169,13 @@
 **Motivo:** Permite construir reglas desde la interfaz manteniendo validación, explicabilidad y seguridad. Separa el lenguaje de condiciones de la construcción de métricas deportivas.
 
 **Impacto:** El API puede validar y probar expresiones con cualquier diccionario de métricas. Cada nuevo evento aún necesita un extractor/etiquetador y métricas disponibles en tiempo real; el lenguaje genérico no convierte automáticamente una definición en una estrategia validada.
+
+## DEC-020 — Sesiones de usuario y propiedad de estrategias
+
+**Problema:** Permitir escrituras anónimas impide atribuir configuraciones y deja expuesta la activación de reglas.
+
+**Decisión:** Registrar contraseñas exclusivamente como hashes Argon2 y usar JWT con vencimiento. La aplicación web mantiene la sesión en cookie `HttpOnly`, `SameSite=Lax`; el token bearer se conserva como contrato para otros clientes. Las escrituras de estrategias requieren identidad y respetan el propietario. Producción no arranca con el secreto JWT local predeterminado.
+
+**Motivo:** Es un límite de seguridad suficiente para el siguiente incremento multiusuario sin acoplar el dominio deportivo al mecanismo de autenticación.
+
+**Impacto:** Quedan pendientes verificación de correo, recuperación de contraseña, rotación/refresh de sesiones, protección CSRF adicional si la aplicación se distribuye entre sitios distintos y roles administrativos.

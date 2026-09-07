@@ -32,9 +32,13 @@ Los archivos operativos continúan siendo una bitácora recuperable durante la t
 
 PostgreSQL es el destino productivo. SQLite utiliza el mismo modelo para desarrollo y pruebas sin exigir Docker. Alembic es la única vía de cambios de esquema versionados. `create_all` en el ciclo de vida de FastAPI facilita una base local vacía; los despliegues ejecutan primero `alembic upgrade head`.
 
+## Seguridad inicial
+
+El API registra usuarios con contraseñas Argon2 y emite sesiones JWT con vencimiento. El navegador recibe el token en una cookie `HttpOnly` y `SameSite=Lax`; clientes externos también pueden usar el bearer devuelto. Crear o activar estrategias requiere autenticación y las estrategias de usuario solo pueden ser modificadas por su propietario. En producción es obligatorio definir `JWT_SECRET`.
+
 ## Límites actuales
 
-- No hay autenticación ni aislamiento multiusuario todavía.
+- Aún no hay recuperación de contraseña, verificación de correo ni roles administrativos.
 - El editor crea objetivos dinámicos y condiciones declarativas. El evaluador genérico soporta grupos `AND`, `OR`, `NOT` y comparadores seguros; el worker solo sabe construir automáticamente las métricas del adaptador `favorite_pressure` actual.
 - Las credenciales Telegram permanecen en variables de entorno; no se muestran ni guardan desde la UI.
 - El estado estadístico de la estrategia inicial sigue siendo `HEURÍSTICA`; la aplicación no lo presenta como probabilidad validada.

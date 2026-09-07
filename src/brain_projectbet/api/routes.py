@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -16,6 +16,10 @@ from brain_projectbet.api.schemas import (
     SnapshotView,
     StrategyCreate,
     StrategyView,
+    TokenView,
+    UserLogin,
+    UserRegister,
+    UserView,
 )
 from brain_projectbet.database.models import (
     AlertRecord,
@@ -23,12 +27,66 @@ from brain_projectbet.database.models import (
     MatchRecord,
     SnapshotRecord,
     StrategyRecord,
+    UserRecord,
 )
 from brain_projectbet.database.session import get_db
+from brain_projectbet.core.security import (
+    create_access_token,
+    get_current_user,
+    hash_password,
+    verify_password,
+)
+from brain_projectbet.core.settings import get_settings
 from brain_projectbet.rules.expression import InvalidExpression, evaluate_expression
 
 
 router = APIRouter(prefix="/api/v1")
+
+
+@router.post("/auth/register", response_model=TokenView, status_code=status.HTTP_201_CREATED)
+def register(payload: UserRegister, response: Response, session: Session = Depends(get_db)):
+    normalized_email = payload.email.strip().lower()
+    if session.scalar(select(UserRecord).where(UserRecord.email == normalized_email)) is not None:
+        raise HTTPException(status_code=409, detail="el correo ya está registrado")
+    user = UserRecord(
+        email=normalized_email,
+        display_name=payload.display_name.strip(),
+        password_hash=hash_password(payload.password),
+        active=True,
+        created_at=datetime.now(UTC),
+    )
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+    token, expires_in = create_access_token(user.id)
+    response.set_cookie(
+        "projectbet_session", token, max_age=expires_in, httponly=True,
+        secure=get_settings().environment == "production", samesite="lax",
+    )
+    return TokenView(access_token=token, expires_in=expires_in, user=user)
+
+
+@router.post("/auth/login", response_model=TokenView)
+def login(payload: UserLogin, response: Response, session: Session = Depends(get_db)):
+    user = session.scalar(select(UserRecord).where(UserRecord.email == payload.email.strip().lower()))
+    if user is None or not user.active or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="credenciales inválidas")
+    token, expires_in = create_access_token(user.id)
+    response.set_cookie(
+        "projectbet_session", token, max_age=expires_in, httponly=True,
+        secure=get_settings().environment == "production", samesite="lax",
+    )
+    return TokenView(access_token=token, expires_in=expires_in, user=user)
+
+
+@router.get("/auth/me", response_model=UserView)
+def me(user: UserRecord = Depends(get_current_user)):
+    return user
+
+
+@router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
+def logout(response: Response):
+    response.delete_cookie("projectbet_session")
 
 
 @router.get("/dashboard", response_model=DashboardView)
@@ -107,8 +165,12 @@ def list_strategies(session: Session = Depends(get_db)):
 
 
 @router.post("/strategies", response_model=StrategyView, status_code=status.HTTP_201_CREATED)
-def create_strategy(payload: StrategyCreate, session: Session = Depends(get_db)):
-    record = StrategyRecord(**payload.model_dump(), created_at=datetime.now(UTC))
+def create_strategy(
+    payload: StrategyCreate,
+    session: Session = Depends(get_db),
+    user: UserRecord = Depends(get_current_user),
+):
+    record = StrategyRecord(**payload.model_dump(), owner_id=user.id, created_at=datetime.now(UTC))
     session.add(record)
     try:
         session.commit()
@@ -120,10 +182,17 @@ def create_strategy(payload: StrategyCreate, session: Session = Depends(get_db))
 
 
 @router.patch("/strategies/{strategy_id}/activation", response_model=StrategyView)
-def set_strategy_activation(strategy_id: int, active: bool, session: Session = Depends(get_db)):
+def set_strategy_activation(
+    strategy_id: int,
+    active: bool,
+    session: Session = Depends(get_db),
+    user: UserRecord = Depends(get_current_user),
+):
     record = session.get(StrategyRecord, strategy_id)
     if record is None:
         raise HTTPException(status_code=404, detail="estrategia no encontrada")
+    if record.owner_id is not None and record.owner_id != user.id:
+        raise HTTPException(status_code=403, detail="no puedes modificar esta estrategia")
     record.active = active
     session.commit()
     session.refresh(record)
