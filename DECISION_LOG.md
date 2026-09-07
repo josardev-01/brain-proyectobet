@@ -139,3 +139,13 @@
 **Motivo:** Permite medir oportunidades perdidas por operación sin usar esa reconstrucción futura como variable de una alerta en vivo.
 
 **Impacto:** En los primeros nueve elegibles hubo dos exposiciones reales no monitoreadas. La prioridad pasa a ser un worker persistente de jornada; no se modificarán umbrales con esta muestra incompleta.
+
+## DEC-017 — Ejecutor reiniciable por ventanas de jornada
+
+**Problema:** Las ejecuciones manuales omitieron dos escenarios reales porque no había un proceso activo durante los partidos.
+
+**Decisión:** Construir el plan desde el registro pre-partido. Cada fixture se observa desde el minuto 35 hasta 150 minutos después del saque inicial y se finaliza a partir de las tres horas. Las ventanas solapadas se fusionan para compartir la consulta global de partidos en vivo. El ejecutor admite un ciclo único para integrarse con un programador y conserva la deduplicación existente, por lo que reiniciarlo no duplica candidatos, alertas ni resultados.
+
+**Motivo:** La cobertura operativa es ahora el cuello de botella; cambiar la heurística con partidos no observados confundiría ausencia de datos con ausencia de señal.
+
+**Impacto:** El intervalo predeterminado es de diez minutos, compatible con la ventana exacta evaluada y con el presupuesto disponible para la jornada. Una ventana exacta de 10 minutos requiere observaciones compatibles y no se inventa si hay interrupciones. El proceso debe seguir respetando la reserva diaria y los límites por minuto del proveedor. Si hay más candidatos que capacidad por ciclo, se priorizan episodios activos sobre líneas base pendientes.

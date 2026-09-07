@@ -38,6 +38,13 @@ def needs_statistics_sample(
     minute = fixture_payload.get("fixture", {}).get("status", {}).get("elapsed")
     if minute is None or int(minute) < minimum_minute:
         return False
+    return favorite_is_losing(registered, fixture_payload)
+
+
+def favorite_is_losing(
+    registered: EligibleFixture,
+    fixture_payload: Mapping[str, Any],
+) -> bool:
     goals = fixture_payload.get("goals", {})
     favorite_key = "home" if registered.favorite_side == "home" else "away"
     opponent_key = "away" if registered.favorite_side == "home" else "home"

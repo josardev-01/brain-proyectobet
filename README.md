@@ -44,6 +44,7 @@ Flujo actual:
 $env:PYTHONPATH = "src"
 python scripts/discover_candidates.py --date AAAA-MM-DD
 python scripts/monitor_candidates.py --cycles 1
+python scripts/run_matchday.py --registry data/raw/eligible/AAAA-MM-DD.json --dry-run
 python scripts/finalize_matches.py --registry data/raw/eligible/AAAA-MM-DD.json
 python scripts/summarize_backtests.py
 python scripts/audit_data_quality.py
@@ -52,5 +53,7 @@ python scripts/send_pending_alerts.py --dry-run
 ```
 
 El flujo descubre favoritos claros, monitorea únicamente los escenarios relevantes, finaliza partidos con eventos exactos, registra resultados para backtesting y conserva las alertas en una bandeja entregable por Telegram.
+
+`run_matchday.py` es el ejecutor persistente y reiniciable. Empieza a consultar en el minuto 35 para llegar con línea base al minuto 45, agrupa partidos solapados en una sola ventana, consulta cada diez minutos y finaliza la jornada tres horas después del último comienzo. Diez minutos conserva el intervalo temporal exacto que evalúa la heurística y deja margen suficiente en la cuota actual; puede ajustarse con `--interval-seconds`. `--dry-run` permite revisar el horario sin consumir cuota y `--once` ejecuta solo la acción que corresponde al momento actual, útil para un programador externo.
 
 La definición activa está en [`config/strategies/favorite_losing_pressure_v2.json`](config/strategies/favorite_losing_pressure_v2.json). Los comandos aceptan `--strategy` para ejecutar otra versión sin modificar el motor.

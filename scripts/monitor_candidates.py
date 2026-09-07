@@ -18,9 +18,15 @@ from brain_projectbet.discovery.storage import load_eligible_fixtures
 from brain_projectbet.domain.alerts import AlertEvent, trigger_once_alert_id
 from brain_projectbet.domain.candidates import observe_candidate
 from brain_projectbet.domain.models import PrematchOdds
-from brain_projectbet.monitoring.selection import needs_statistics_sample, select_live_eligible
+from brain_projectbet.monitoring.selection import (
+    favorite_is_losing,
+    needs_statistics_sample,
+    select_live_eligible,
+)
 from brain_projectbet.normalization.api_football import normalize_snapshot
 from brain_projectbet.providers.api_football import ApiFootballProbe
+from brain_projectbet.providers.http import ProviderHttpError
+from brain_projectbet.providers.quota import quota_block_reason
 from brain_projectbet.rules.favorite_pressure import evaluate_favorite_pressure
 from brain_projectbet.strategies.config import DEFAULT_STRATEGY_PATH, load_strategy
 
@@ -58,37 +64,71 @@ def main() -> int:
     pressure_policy = strategy.pressure_policy
 
     for cycle in range(1, args.cycles + 1):
-        live = probe.live_matches()
+        try:
+            live = probe.live_matches()
+        except ProviderHttpError as error:
+            print(json.dumps({
+                "cycle": cycle,
+                "stopped": f"provider_http_{error.status_code}",
+                "retry_after": error.retry_after,
+            }))
+            return 75
         selected = select_live_eligible(
             live.payload,
             eligible,
             warmup_minute=policy.warmup_minute,
-            maximum_matches=args.maximum_matches,
+            maximum_matches=max(1, len(eligible)),
         )
-        selected_for_statistics = []
+        statistics_candidates = []
         for registered, fixture_payload in selected:
             snapshot_path = Path("data/raw/snapshots") / f"api-football-{registered.fixture_id}.jsonl"
+            has_snapshots = bool(load_snapshots(snapshot_path))
             if needs_statistics_sample(
                 registered,
                 fixture_payload,
-                has_snapshots=bool(load_snapshots(snapshot_path)),
+                has_snapshots=has_snapshots,
                 minimum_minute=policy.minimum_minute,
             ):
-                selected_for_statistics.append((registered, fixture_payload))
-        daily_remaining = live.rate_limits().daily_remaining
+                minute = int(fixture_payload["fixture"]["status"]["elapsed"])
+                active = minute >= policy.minimum_minute and favorite_is_losing(
+                    registered, fixture_payload
+                )
+                statistics_candidates.append((0 if active else 1, -minute, registered, fixture_payload))
+        statistics_candidates.sort(key=lambda item: (item[0], item[1]))
+        selected_for_statistics = [
+            (registered, fixture_payload)
+            for _, _, registered, fixture_payload in statistics_candidates[: args.maximum_matches]
+        ]
+        limits = live.rate_limits()
+        daily_remaining = limits.daily_remaining
         required_for_stats = len(selected_for_statistics)
-        if daily_remaining is not None and daily_remaining - required_for_stats < args.daily_reserve:
+        block_reason = quota_block_reason(
+            limits,
+            requested=required_for_stats,
+            daily_reserve=args.daily_reserve,
+        )
+        if block_reason is not None:
             print(json.dumps({
                 "cycle": cycle,
-                "stopped": "daily_reserve",
+                "stopped": block_reason,
                 "daily_remaining": daily_remaining,
+                "minute_remaining": limits.minute_remaining,
                 "required_for_stats": required_for_stats,
             }))
-            break
+            return 75
 
         cycle_results = []
         for registered, fixture_payload in selected_for_statistics:
-            statistics = probe.fixture_statistics(registered.fixture_id)
+            try:
+                statistics = probe.fixture_statistics(registered.fixture_id)
+            except ProviderHttpError as error:
+                print(json.dumps({
+                    "cycle": cycle,
+                    "fixture_id": registered.fixture_id,
+                    "stopped": f"provider_http_{error.status_code}",
+                    "retry_after": error.retry_after,
+                }))
+                return 75
             snapshot = normalize_snapshot(
                 fixture_payload,
                 statistics.payload.get("response", []),
