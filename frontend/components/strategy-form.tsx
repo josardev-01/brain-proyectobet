@@ -18,6 +18,10 @@ export function StrategyForm() {
     const objectiveType = String(data.get("objective_type"));
     const objectiveSubject = String(data.get("objective_subject"));
     const horizonMinutes = Number(data.get("horizon_minutes"));
+    const conditionValueRaw = String(data.get("condition_value"));
+    const conditionValue = conditionValueRaw === "true" ? true
+      : conditionValueRaw === "false" ? false
+      : Number.isNaN(Number(conditionValueRaw)) ? conditionValueRaw : Number(conditionValueRaw);
     const response = await fetch(`${API_URL}/strategies`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -37,7 +41,11 @@ export function StrategyForm() {
           objective: {
             target: { event_type: objectiveType, subject: objectiveSubject, horizon_minutes: horizonMinutes },
           },
-          conditions: [],
+          conditions: [{
+            metric: String(data.get("condition_metric")),
+            operator: String(data.get("condition_operator")),
+            value: conditionValue,
+          }],
         },
       }),
     });
@@ -60,6 +68,9 @@ export function StrategyForm() {
       <label>Evento<select name="objective_type"><option value="goal">Gol</option><option value="corner">Corner</option><option value="card">Tarjeta</option></select></label>
       <label>Sujeto<select name="objective_subject"><option value="prematch_favorite">Favorito pre-partido</option><option value="home">Local</option><option value="away">Visitante</option><option value="either">Cualquiera</option></select></label>
       <label>Horizonte (min)<input name="horizon_minutes" type="number" min="1" max="120" defaultValue="10" required /></label>
+      <label>Métrica inicial<input name="condition_metric" placeholder="favorite_shots_on_target_last_10" pattern="[a-z0-9_]+" required /></label>
+      <label>Operador<select name="condition_operator"><option>&gt;=</option><option>&gt;</option><option>=</option><option>&lt;=</option><option>&lt;</option><option>!=</option></select></label>
+      <label>Valor<input name="condition_value" placeholder="2" required /></label>
     </div>
     <div className="form-actions"><p>{message}</p><button type="submit">Guardar versión</button></div>
   </form>;

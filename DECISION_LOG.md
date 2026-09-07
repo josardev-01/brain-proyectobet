@@ -159,3 +159,13 @@
 **Motivo:** El contrato de partidos, snapshots, estrategias versionadas y alertas es estable aunque cambien posteriormente los umbrales. Esto permite desarrollar producto sin presentar la heurística como validada.
 
 **Impacto:** Backend y frontend deben mostrar el estado estadístico explícito. La primera versión web permite observar partidos, snapshots, estrategias y alertas, además de registrar nuevos objetivos como definiciones inactivas. Ejecutar tipos de regla adicionales, autenticación y multiusuario quedan como siguientes incrementos; no se simula soporte que el worker todavía no tenga.
+
+## DEC-019 — Expresiones declarativas seguras para reglas dinámicas
+
+**Problema:** Incorporar objetivos futuros mediante código específico haría que cada nuevo caso exigiera modificar y desplegar el backend.
+
+**Decisión:** Representar condiciones como datos y evaluarlas sin `eval` ni código suministrado por usuarios. El contrato soporta comparadores `>`, `>=`, `<`, `<=`, `=`, `!=`, `BETWEEN` y grupos anidados `AND`, `OR`, `NOT`, con límites de profundidad y cantidad de nodos. Una métrica ausente falla de forma cerrada y queda explicada.
+
+**Motivo:** Permite construir reglas desde la interfaz manteniendo validación, explicabilidad y seguridad. Separa el lenguaje de condiciones de la construcción de métricas deportivas.
+
+**Impacto:** El API puede validar y probar expresiones con cualquier diccionario de métricas. Cada nuevo evento aún necesita un extractor/etiquetador y métricas disponibles en tiempo real; el lenguaje genérico no convierte automáticamente una definición en una estrategia validada.

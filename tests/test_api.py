@@ -87,6 +87,14 @@ class ApiTests(unittest.TestCase):
         }
         self.assertEqual(self.client.post("/api/v1/strategies", json=payload).status_code, 422)
 
+    def test_evaluates_declarative_rule(self) -> None:
+        response = self.client.post("/api/v1/rules/evaluate", json={
+            "expression": {"metric": "corners_last_10", "operator": ">=", "value": 2},
+            "metrics": {"corners_last_10": 3},
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["matched"])
+
 
 if __name__ == "__main__":
     unittest.main()

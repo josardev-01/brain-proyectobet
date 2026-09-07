@@ -35,6 +35,6 @@ PostgreSQL es el destino productivo. SQLite utiliza el mismo modelo para desarro
 ## Límites actuales
 
 - No hay autenticación ni aislamiento multiusuario todavía.
-- El editor crea objetivos dinámicos y nuevas versiones, pero el worker solo sabe ejecutar el adaptador `favorite_pressure` actual.
+- El editor crea objetivos dinámicos y condiciones declarativas. El evaluador genérico soporta grupos `AND`, `OR`, `NOT` y comparadores seguros; el worker solo sabe construir automáticamente las métricas del adaptador `favorite_pressure` actual.
 - Las credenciales Telegram permanecen en variables de entorno; no se muestran ni guardan desde la UI.
 - El estado estadístico de la estrategia inicial sigue siendo `HEURÍSTICA`; la aplicación no lo presenta como probabilidad validada.

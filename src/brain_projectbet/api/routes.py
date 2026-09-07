@@ -11,6 +11,8 @@ from brain_projectbet.api.schemas import (
     AlertView,
     DashboardView,
     MatchSummary,
+    RuleEvaluationRequest,
+    RuleEvaluationView,
     SnapshotView,
     StrategyCreate,
     StrategyView,
@@ -23,6 +25,7 @@ from brain_projectbet.database.models import (
     StrategyRecord,
 )
 from brain_projectbet.database.session import get_db
+from brain_projectbet.rules.expression import InvalidExpression, evaluate_expression
 
 
 router = APIRouter(prefix="/api/v1")
@@ -135,3 +138,16 @@ def list_alerts(
     return list(session.scalars(select(AlertRecord).order_by(
         AlertRecord.created_at.desc()
     ).limit(limit)))
+
+
+@router.post("/rules/evaluate", response_model=RuleEvaluationView)
+def evaluate_rule(payload: RuleEvaluationRequest):
+    try:
+        result = evaluate_expression(payload.expression, payload.metrics)
+    except InvalidExpression as error:
+        raise HTTPException(status_code=422, detail=str(error))
+    return RuleEvaluationView(
+        matched=result.matched,
+        reasons=list(result.reasons),
+        missing_metrics=list(result.missing_metrics),
+    )

@@ -5,6 +5,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from brain_projectbet.rules.expression import InvalidExpression, validate_expression
+
 
 class MatchSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -77,6 +79,15 @@ class StrategyCreate(BaseModel):
         configured_version = self.config.get("version")
         if configured_id != self.strategy_key or configured_version != self.version:
             raise ValueError("strategy_id y version del config deben coincidir con la identidad")
+        conditions = self.config.get("conditions")
+        if conditions:
+            expression = conditions if isinstance(conditions, dict) else {
+                "logical": "AND", "conditions": conditions
+            }
+            try:
+                validate_expression(expression)
+            except InvalidExpression as error:
+                raise ValueError(str(error)) from error
         return self
 
 
@@ -108,3 +119,14 @@ class DashboardView(BaseModel):
     resolved_alerts: int
     precision: float | None
     statistical_status: str = "EXPERIMENTAL"
+
+
+class RuleEvaluationRequest(BaseModel):
+    expression: dict[str, Any]
+    metrics: dict[str, Any]
+
+
+class RuleEvaluationView(BaseModel):
+    matched: bool
+    reasons: list[str]
+    missing_metrics: list[str]
