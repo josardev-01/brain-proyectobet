@@ -17,6 +17,17 @@ from brain_projectbet.domain.models import MatchSnapshot
 
 
 class DatabaseSyncTests(unittest.TestCase):
+    def test_sqlite_engine_creates_missing_parent_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            database_path = Path(directory) / "nested" / "projectbet.db"
+
+            engine = build_engine(f"sqlite:///{database_path.as_posix()}")
+            try:
+                Base.metadata.create_all(engine)
+                self.assertTrue(database_path.is_file())
+            finally:
+                engine.dispose()
+
     def test_registry_and_snapshots_are_idempotent_on_sqlite(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
