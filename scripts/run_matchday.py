@@ -66,6 +66,11 @@ def main() -> int:
     parser.add_argument("--daily-reserve", type=int, default=15)
     parser.add_argument("--once", action="store_true", help="Ejecuta solo la accion que corresponde ahora")
     parser.add_argument("--dry-run", action="store_true", help="Muestra el plan sin consultar al proveedor")
+    parser.add_argument(
+        "--no-database-sync",
+        action="store_true",
+        help="No sincroniza los archivos capturados hacia la base de datos",
+    )
     args = parser.parse_args()
     if args.interval_seconds <= 0 or args.maximum_matches <= 0:
         parser.error("interval-seconds y maximum-matches deben ser positivos")
@@ -105,6 +110,10 @@ def main() -> int:
                     "daily_remaining": payload["daily_remaining"],
                 }))
                 return 75
+            if not args.no_database_sync:
+                sync_exit, _ = run_script("sync_database.py", ["--registry", str(args.registry)])
+                if sync_exit:
+                    return sync_exit
             if args.once:
                 return 0
             time.sleep(args.interval_seconds)
@@ -128,6 +137,10 @@ def main() -> int:
                         "reason": "no_finished_fixture_in_batch",
                     }))
                     return 0
+                if not args.no_database_sync:
+                    sync_exit, _ = run_script("sync_database.py", ["--registry", str(args.registry)])
+                    if sync_exit:
+                        return sync_exit
         if action == "complete" or args.once:
             print(json.dumps({
                 "action": action,
