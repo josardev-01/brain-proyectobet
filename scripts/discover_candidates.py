@@ -43,8 +43,10 @@ def main() -> int:
         response = probe.prematch_odds_by_date(args.date, page=page)
         payloads.append(response.payload)
         limits = response.rate_limits()
-        daily_remaining = limits.daily_remaining
-        total_pages = int(response.payload.get("paging", {}).get("total", 1))
+        if limits.daily_remaining is not None:
+            daily_remaining = limits.daily_remaining
+        reported_pages = int(response.payload.get("paging", {}).get("total", 1))
+        total_pages = max(total_pages, reported_pages)
         if daily_remaining is not None and daily_remaining <= args.daily_reserve:
             break
         if page >= total_pages:
