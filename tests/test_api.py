@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 
 from brain_projectbet.api.main import create_app
 from brain_projectbet.core.security import hash_password
-from brain_projectbet.database.models import MatchRecord, UserRecord
+from brain_projectbet.database.models import MatchRecord, StrategyRecord, UserRecord
 from brain_projectbet.database.session import Base, build_engine, get_db
 
 
@@ -182,6 +182,53 @@ class ApiTests(unittest.TestCase):
     def test_strategy_write_requires_authentication(self) -> None:
         response = self.client.post("/api/v1/strategies", json={})
         self.assertIn(response.status_code, (401, 422))
+
+    def test_regular_user_cannot_modify_system_strategy(self) -> None:
+        with self.sessions.begin() as session:
+            strategy = StrategyRecord(
+                owner_id=None,
+                strategy_key="system_strategy",
+                version=1,
+                name="System strategy",
+                objective_type="goal",
+                objective_subject="favorite",
+                horizon_minutes=10,
+                config={"strategy_id": "system_strategy", "version": 1},
+                active=True,
+                created_at=datetime.now(UTC),
+            )
+            session.add(strategy)
+            session.flush()
+            strategy_id = strategy.id
+        response = self.client.patch(
+            f"/api/v1/strategies/{strategy_id}/activation?active=false",
+            headers=self.auth_headers(),
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_admin_can_modify_system_strategy(self) -> None:
+        with self.sessions.begin() as session:
+            strategy = StrategyRecord(
+                owner_id=None,
+                strategy_key="system_strategy",
+                version=1,
+                name="System strategy",
+                objective_type="goal",
+                objective_subject="favorite",
+                horizon_minutes=10,
+                config={"strategy_id": "system_strategy", "version": 1},
+                active=True,
+                created_at=datetime.now(UTC),
+            )
+            session.add(strategy)
+            session.flush()
+            strategy_id = strategy.id
+        response = self.client.patch(
+            f"/api/v1/strategies/{strategy_id}/activation?active=false",
+            headers=self.admin_headers(),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.json()["active"])
 
     def test_manages_owned_notification_endpoint(self) -> None:
         self.auth_headers()

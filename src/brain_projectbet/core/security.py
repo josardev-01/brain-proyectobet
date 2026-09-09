@@ -15,6 +15,7 @@ from brain_projectbet.database.session import get_db
 
 
 password_hasher = PasswordHasher()
+_dummy_password_hash = password_hasher.hash("projectbet-dummy-password-never-used")
 bearer = HTTPBearer(auto_error=False)
 
 
@@ -23,10 +24,10 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(password: str, password_hash: str | None) -> bool:
-    if not password_hash:
-        return False
+    candidate_hash = password_hash or _dummy_password_hash
     try:
-        return password_hasher.verify(password_hash, password)
+        verified = password_hasher.verify(candidate_hash, password)
+        return bool(password_hash) and verified
     except (VerifyMismatchError, InvalidHashError):
         return False
 

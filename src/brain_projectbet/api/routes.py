@@ -90,7 +90,7 @@ def login(payload: UserLogin, response: Response, session: Session = Depends(get
     token, expires_in = create_access_token(user.id)
     response.set_cookie(
         "projectbet_session", token, max_age=expires_in, httponly=True,
-        secure=get_settings().environment == "production", samesite="lax",
+        secure=get_settings().environment == "production", samesite="lax", path="/",
     )
     return TokenView(access_token=token, expires_in=expires_in, user=user)
 
@@ -102,7 +102,7 @@ def me(user: UserRecord = Depends(get_current_user)):
 
 @router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
 def logout(response: Response):
-    response.delete_cookie("projectbet_session")
+    response.delete_cookie("projectbet_session", path="/")
 
 
 @router.get("/admin/users", response_model=list[UserView])
@@ -356,6 +356,8 @@ def set_strategy_activation(
     record = session.get(StrategyRecord, strategy_id)
     if record is None:
         raise HTTPException(status_code=404, detail="estrategia no encontrada")
+    if record.owner_id is None and user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="solo un administrador modifica estrategias del sistema")
     if record.owner_id is not None and record.owner_id != user.id:
         raise HTTPException(status_code=403, detail="no puedes modificar esta estrategia")
     record.active = active

@@ -27,6 +27,9 @@ def create_app() -> FastAPI:
         version="0.2.0",
         description="API de monitoreo, estrategias y alertas de fútbol en vivo.",
         lifespan=lifespan,
+        docs_url=None if settings.environment == "production" else "/docs",
+        redoc_url=None if settings.environment == "production" else "/redoc",
+        openapi_url=None if settings.environment == "production" else "/openapi.json",
     )
     app.add_middleware(
         CORSMiddleware,

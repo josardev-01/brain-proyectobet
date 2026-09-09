@@ -1,12 +1,13 @@
 services:
   postgres:
     image: postgres:17-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: projectbet
       POSTGRES_USER: projectbet
       POSTGRES_PASSWORD: projectbet_local
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -19,14 +20,23 @@ services:
     build:
       context: .
       dockerfile: docker/backend.Dockerfile
+    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://projectbet:projectbet_local@postgres:5432/projectbet
       API_CORS_ORIGINS: http://localhost:3000
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN is required}
+      API_FOOTBALL_KEY: ${API_FOOTBALL_KEY:?API_FOOTBALL_KEY is required}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
 
   web:
     build:
@@ -34,10 +44,25 @@ services:
       dockerfile: docker/frontend.Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+    restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+
+  notifier:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    restart: unless-stopped
+    command: ["sh", "-c", "while true; do python scripts/send_database_alerts.py --maximum 20; sleep 30; done"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://projectbet:projectbet_local@postgres:5432/projectbet
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN is required}
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   postgres_data:
