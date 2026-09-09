@@ -84,7 +84,9 @@ export type Alert = {
   delivery_status: string;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
+const API_URL = process.env.API_INTERNAL_URL
+  ?? process.env.NEXT_PUBLIC_API_URL
+  ?? "http://localhost:8000/api/v1";
 
 export async function apiGet<T>(path: string, fallback: T): Promise<{ data: T; online: boolean }> {
   try {
