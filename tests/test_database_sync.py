@@ -38,6 +38,7 @@ class DatabaseSyncTests(unittest.TestCase):
                 league_id="1", league_name="Test", country="PY", favorite_side="home",
                 median_home_odds=1.4, median_draw_odds=4.0, median_away_odds=7.0,
                 favorite_probability=.65, bookmaker_count=3, discovered_at=captured,
+                home_team_name="Home", away_team_name="Away",
             ),))
             snapshot_path = root / "data/raw/snapshots/api-football-7.jsonl"
             append_snapshot(snapshot_path, MatchSnapshot(
@@ -57,6 +58,8 @@ class DatabaseSyncTests(unittest.TestCase):
                     sync_registry(session, registry)
                     self.assertEqual(session.scalar(select(func.count()).select_from(MatchRecord)), 1)
                     self.assertEqual(session.scalar(select(func.count()).select_from(SnapshotRecord)), 1)
+                    match = session.scalar(select(MatchRecord))
+                    self.assertEqual((match.home_team_name, match.away_team_name), ("Home", "Away"))
             engine.dispose()
 
 

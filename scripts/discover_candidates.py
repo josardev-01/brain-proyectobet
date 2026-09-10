@@ -6,7 +6,10 @@ import os
 from datetime import UTC, date, datetime
 from pathlib import Path
 
-from brain_projectbet.discovery.eligible import discover_eligible_fixtures
+from brain_projectbet.discovery.eligible import (
+    discover_eligible_fixtures,
+    enrich_eligible_fixtures,
+)
 from brain_projectbet.discovery.storage import save_eligible_fixtures
 from brain_projectbet.providers.api_football import ApiFootballProbe
 from brain_projectbet.strategies.config import DEFAULT_STRATEGY_PATH, load_strategy
@@ -58,8 +61,17 @@ def main() -> int:
         discovered_at=discovered_at,
         policy=strategy.candidate_policy,
     )
+    eligible = result.eligible
+    identities_enriched = False
+    if eligible and (daily_remaining is None or daily_remaining > args.daily_reserve):
+        fixture_catalog = probe.fixtures_by_date(args.date)
+        eligible = enrich_eligible_fixtures(eligible, fixture_catalog.payload)
+        identities_enriched = True
+        catalog_limits = fixture_catalog.rate_limits()
+        if catalog_limits.daily_remaining is not None:
+            daily_remaining = catalog_limits.daily_remaining
     output = args.output or Path("data/raw/eligible") / f"{args.date}.json"
-    save_eligible_fixtures(output, result.eligible)
+    save_eligible_fixtures(output, eligible)
     print(json.dumps({
         "date": args.date,
         "strategy_id": strategy.strategy_id,
@@ -67,7 +79,8 @@ def main() -> int:
         "pages_read": len(payloads),
         "total_pages_reported": total_pages,
         "fixtures_evaluated": result.fixtures_evaluated,
-        "eligible_count": len(result.eligible),
+        "eligible_count": len(eligible),
+        "team_identities_enriched": identities_enriched,
         "skipped_incomplete_consensus": result.skipped_incomplete_consensus,
         "daily_remaining": daily_remaining,
         "output": str(output),
@@ -76,12 +89,14 @@ def main() -> int:
                 "fixture_id": fixture.fixture_id,
                 "kickoff_at": fixture.kickoff_at.isoformat(),
                 "league": fixture.league_name,
+                "home": fixture.home_team_name,
+                "away": fixture.away_team_name,
                 "favorite_side": fixture.favorite_side,
                 "favorite_odds": fixture.median_home_odds if fixture.favorite_side == "home" else fixture.median_away_odds,
                 "favorite_probability": round(fixture.favorite_probability, 4),
                 "bookmakers": fixture.bookmaker_count,
             }
-            for fixture in result.eligible
+            for fixture in eligible
         ],
     }, ensure_ascii=False))
     return 0

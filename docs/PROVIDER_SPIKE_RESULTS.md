@@ -26,6 +26,23 @@ alternativas.
 Las claves permanecen en `.env`. APIFootball.com autoriza por IP; desarrollo
 local y VPS necesitan registrar sus IP públicas de salida por separado.
 
+## Reconciliación real — 2026-09-10
+
+El descubrimiento leyó 3 de 13 páginas de cuotas (30 fixtures) y encontró tres
+favoritos elegibles. Una consulta adicional al catálogo completó nombres e IDs
+de equipos. API-Football informó 89 solicitudes diarias restantes después de
+descubrimiento y finalización.
+
+APIFootball.com devolvió 33 partidos live. Ninguno correspondía a los tres
+elegibles al instante del cruce. El resultado fue cero enlaces, cero
+ambigüedades y tres no encontrados. Esto valida el comportamiento cerrado, no
+la cobertura cruzada; todavía se necesita observar un elegible mientras ambos
+proveedores lo reportan en vivo.
+
+Los tres fixtures fueron finalizados y guardados con estado `FT`. No existieron
+snapshots live intermedios, por lo que no se generó ninguna alerta ni se puede
+evaluar presión retrospectivamente sin fuga temporal.
+
 ## API-Football — observación 2026-09-05
 
 **Estado:** EXPERIMENTAL. Una sola observación valida el pipeline, no la calidad general del proveedor.

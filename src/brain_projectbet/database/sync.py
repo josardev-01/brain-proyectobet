@@ -50,6 +50,8 @@ def sync_registry(session: Session, registry: Path) -> dict[str, int]:
                 league_id=fixture.league_id,
                 league_name=fixture.league_name,
                 country=fixture.country,
+                home_team_name=fixture.home_team_name,
+                away_team_name=fixture.away_team_name,
                 favorite_side=fixture.favorite_side,
                 favorite_odds=_favorite_odds(fixture),
                 favorite_probability=fixture.favorite_probability,
@@ -60,6 +62,12 @@ def sync_registry(session: Session, registry: Path) -> dict[str, int]:
             session.add(match)
             session.flush()
             created_matches += 1
+        else:
+            if fixture.home_team_name:
+                match.home_team_name = fixture.home_team_name
+            if fixture.away_team_name:
+                match.away_team_name = fixture.away_team_name
+            match.updated_at = datetime.now(UTC)
 
         snapshot_path = Path("data/raw/snapshots") / f"api-football-{fixture.fixture_id}.jsonl"
         existing_times = {

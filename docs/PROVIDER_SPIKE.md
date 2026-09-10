@@ -112,6 +112,19 @@ python scripts/discover_candidates.py --date 2026-09-05 --max-pages 3 --daily-re
 
 La salida indica `pages_read` y `total_pages_reported`. Si son distintos, el registro tiene cobertura parcial y no representa toda la jornada. El límite de páginas protege la cuota del plan gratuito mientras se definen competiciones prioritarias.
 
+El descubrimiento añade nombres e IDs de equipos mediante el catálogo de
+fixtures. Con ellos se puede comprobar el cruce conservador contra el feed live
+de APIFootball.com:
+
+```powershell
+python scripts/reconcile_live_providers.py --registry data/raw/eligible/AAAA-MM-DD.json
+python scripts/reconcile_live_providers.py --registry data/raw/eligible/AAAA-MM-DD.json --write-snapshots
+```
+
+Sin `--write-snapshots` el comando solo informa. La reconciliación compara los
+dos equipos en el mismo orden, tolera acentos y sufijos de club, exige similitud
+mínima y rechaza empates o coincidencias cercanas.
+
 El monitor consulta primero la lista global de partidos en vivo. Toma una línea base estadística de cada elegible desde el minuto 35 y luego vuelve a solicitar estadísticas solo mientras el favorito esté perdiendo desde el minuto 45:
 
 ```powershell

@@ -35,7 +35,11 @@ No se considera validada ninguna fórmula o regla hasta evaluarla mediante datos
 - Frontend: Next.js y TypeScript, decisión provisional.
 - Notificaciones iniciales: Telegram.
 
-La implementación crecerá de manera incremental. API-Football es el proveedor operativo del spike; su adopción definitiva sigue pendiente de medir cobertura, latencia y coste con partidos reales.
+La implementación crecerá de manera incremental. API-Football aporta
+actualmente las cuotas pre-partido. APIFootball.com aporta el reloj y las
+estadísticas live mediante un adaptador normalizado; GOAL API se mantiene como
+respaldo experimental. Los IDs externos se reconcilian antes de guardar un
+snapshot y una coincidencia ambigua se rechaza.
 
 ## Spike de proveedores
 
@@ -46,6 +50,8 @@ Flujo actual:
 ```powershell
 $env:PYTHONPATH = "src"
 python scripts/discover_candidates.py --date AAAA-MM-DD
+python scripts/reconcile_live_providers.py --registry data/raw/eligible/AAAA-MM-DD.json
+python scripts/reconcile_live_providers.py --registry data/raw/eligible/AAAA-MM-DD.json --write-snapshots
 python scripts/monitor_candidates.py --cycles 1
 python scripts/run_matchday.py --registry data/raw/eligible/AAAA-MM-DD.json --dry-run
 python scripts/finalize_matches.py --registry data/raw/eligible/AAAA-MM-DD.json
@@ -57,6 +63,12 @@ python scripts/send_database_alerts.py --maximum 20
 ```
 
 El flujo descubre favoritos claros, monitorea únicamente los escenarios relevantes, finaliza partidos con eventos exactos, registra resultados para backtesting y conserva las alertas en una bandeja entregable por Telegram.
+
+El descubrimiento enriquece cada candidato con nombres e IDs de equipos usando
+el catálogo de fixtures de API-Football. `reconcile_live_providers.py` compara
+esos nombres con APIFootball.com. Sin `--write-snapshots` solo informa el cruce;
+la escritura explícita conserva el ID canónico de API-Football y registra el
+proveedor e ID de origen dentro de la metadata.
 
 `run_matchday.py` es el ejecutor persistente y reiniciable. Empieza a consultar en el minuto 35 para llegar con línea base al minuto 45, agrupa partidos solapados en una sola ventana, consulta cada diez minutos y finaliza la jornada tres horas después del último comienzo. Diez minutos conserva el intervalo temporal exacto que evalúa la heurística y deja margen suficiente en la cuota actual; puede ajustarse con `--interval-seconds`. `--dry-run` permite revisar el horario sin consumir cuota y `--once` ejecuta solo la acción que corresponde al momento actual, útil para un programador externo.
 

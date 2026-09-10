@@ -29,6 +29,14 @@ class ApiFootballProbe:
         )
         return ProbeResponse(self.name, "fixture", elapsed_ms, payload, headers)
 
+    def fixtures_by_date(self, date: str) -> ProbeResponse:
+        payload, elapsed_ms, headers = get_json(
+            f"{self.base_url}/fixtures",
+            query={"date": date},
+            headers=self._headers,
+        )
+        return ProbeResponse(self.name, "fixtures_by_date", elapsed_ms, payload, headers)
+
     def fixture_statistics(self, fixture_id: str) -> ProbeResponse:
         payload, elapsed_ms, headers = get_json(
             f"{self.base_url}/fixtures/statistics",

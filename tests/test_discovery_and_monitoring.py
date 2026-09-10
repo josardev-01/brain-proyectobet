@@ -4,7 +4,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from brain_projectbet.collection.storage import append_alert_once
-from brain_projectbet.discovery.eligible import discover_eligible_fixtures
+from brain_projectbet.discovery.eligible import (
+    discover_eligible_fixtures,
+    enrich_eligible_fixtures,
+)
 from brain_projectbet.discovery.storage import load_eligible_fixtures, save_eligible_fixtures
 from brain_projectbet.domain.alerts import AlertEvent, trigger_once_alert_id
 from brain_projectbet.domain.candidates import CandidateObservation
@@ -57,6 +60,20 @@ class DiscoveryTests(unittest.TestCase):
             restored = load_eligible_fixtures(path)
         self.assertEqual(restored[0].fixture_id, "10")
         self.assertIsNotNone(restored[0].kickoff_at.tzinfo)
+
+    def test_enriches_team_identity_from_fixture_catalog(self) -> None:
+        result = discover_eligible_fixtures(
+            [{"response": [odds_entry()]}], discovered_at=datetime.now(UTC)
+        )
+        enriched = enrich_eligible_fixtures(result.eligible, {"response": [{
+            "fixture": {"id": 10},
+            "teams": {
+                "home": {"id": 1, "name": "Local FC"},
+                "away": {"id": 2, "name": "Visitante"},
+            },
+        }]})
+        self.assertEqual(enriched[0].home_team_name, "Local FC")
+        self.assertEqual(enriched[0].away_team_id, "2")
 
 
 class MonitoringSelectionTests(unittest.TestCase):

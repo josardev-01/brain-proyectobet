@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Any, Mapping
 
@@ -23,6 +23,10 @@ class EligibleFixture:
     favorite_probability: float
     bookmaker_count: int
     discovered_at: datetime
+    home_team_id: str = ""
+    away_team_id: str = ""
+    home_team_name: str = ""
+    away_team_name: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,6 +34,31 @@ class DiscoveryResult:
     eligible: tuple[EligibleFixture, ...]
     fixtures_evaluated: int
     skipped_incomplete_consensus: int
+
+
+def enrich_eligible_fixtures(
+    fixtures: tuple[EligibleFixture, ...],
+    fixture_payload: Mapping[str, Any],
+) -> tuple[EligibleFixture, ...]:
+    """Añade identidades de equipos desde /fixtures sin alterar las odds."""
+    catalog = {
+        str(entry.get("fixture", {}).get("id", "")): entry
+        for entry in fixture_payload.get("response", [])
+    }
+    enriched = []
+    for fixture in fixtures:
+        entry = catalog.get(fixture.fixture_id, {})
+        teams = entry.get("teams", {})
+        home = teams.get("home", {})
+        away = teams.get("away", {})
+        enriched.append(replace(
+            fixture,
+            home_team_id=str(home.get("id", "")),
+            away_team_id=str(away.get("id", "")),
+            home_team_name=str(home.get("name", "")),
+            away_team_name=str(away.get("name", "")),
+        ))
+    return tuple(enriched)
 
 
 def discover_eligible_fixtures(

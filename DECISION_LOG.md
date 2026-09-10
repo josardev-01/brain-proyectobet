@@ -211,3 +211,25 @@
 **Motivo:** Permite crecimiento controlado durante el MVP, evita que cualquiera obtenga permisos automáticamente y no hace depender el acceso inicial de un servicio de correo todavía inexistente.
 
 **Impacto:** Los usuarios migrados conservan acceso aprobado. El API registra estado, revisor y fecha de revisión. Hasta incorporar correo, el solicitante consulta posteriormente su acceso intentando iniciar sesión; recuperación de contraseña y avisos automáticos siguen pendientes.
+
+## DEC-024 — Identidad canónica y reconciliación entre proveedores
+
+**Problema:** Las cuotas pre-partido y las estadísticas en vivo provienen de
+fuentes con identificadores de partido y equipo incompatibles.
+
+**Opciones:** Suponer IDs equivalentes, duplicar partidos por proveedor o
+mantener una identidad canónica y enlazar explícitamente cada fuente.
+
+**Decisión:** API-Football conserva por ahora la identidad canónica del fixture
+porque origina el candidato y sus odds. El descubrimiento guarda también los
+nombres e IDs de ambos equipos. APIFootball.com se reconcilia por los equipos en
+orden, con normalización conservadora de nombres, umbral mínimo y margen entre
+candidatos. Faltantes y ambigüedades fallan de forma cerrada.
+
+**Motivo:** Evita atribuir estadísticas al partido equivocado y permite cambiar
+por separado el proveedor de odds o el de datos live.
+
+**Impacto:** Los snapshots enlazados usan el fixture canónico y conservan
+`source_provider` y `source_match_id` en metadata. El siguiente paso es medir
+coincidencias reales simultáneas y añadir una tabla persistente de aliases si
+los nombres varían de manera recurrente.
