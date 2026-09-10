@@ -2,7 +2,9 @@
 
 ## Objetivo
 
-Comprobar con respuestas reales si API-Football o SportMonks entregan los datos necesarios, con suficiente frecuencia y calidad, para construir ventanas temporales y evaluar objetivos dinámicos.
+Comprobar con respuestas reales si API-Football, SportMonks, GOAL API o
+APIFootball.com entregan los datos necesarios, con suficiente frecuencia y
+calidad, para construir ventanas temporales y evaluar objetivos dinámicos.
 
 El primer objetivo es:
 
@@ -49,6 +51,12 @@ python scripts/provider_spike.py api-football statistics --fixture-id ID
 python scripts/provider_spike.py api-football odds --fixture-id ID
 python scripts/provider_spike.py sportmonks live
 python scripts/provider_spike.py sportmonks odds --fixture-id ID
+python scripts/provider_spike.py goal-api live
+python scripts/provider_spike.py goal-api statistics --fixture-id ID
+python scripts/provider_spike.py goal-api events --fixture-id ID
+python scripts/provider_spike.py apifootball-com live
+python scripts/provider_spike.py apifootball-com statistics --fixture-id ID
+python scripts/provider_spike.py apifootball-com odds --fixture-id ID
 ```
 
 Las respuestas se guardan en `data/raw/provider-spike/`, fuera del control de versiones. No deben contener nuestras claves, aunque sí pueden contener datos sujetos a las condiciones del proveedor; no publicarlas sin revisar la licencia aplicable.

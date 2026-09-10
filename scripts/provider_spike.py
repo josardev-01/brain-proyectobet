@@ -7,6 +7,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from brain_projectbet.providers.api_football import ApiFootballProbe
+from brain_projectbet.providers.apifootball_com import ApiFootballComProbe
+from brain_projectbet.providers.goal_api import GoalApiProbe
 from brain_projectbet.providers.sportmonks import SportMonksProbe
 
 
@@ -24,12 +26,19 @@ def load_dotenv(path: Path) -> None:
 def build_probe(provider: str):
     if provider == "api-football":
         return ApiFootballProbe(os.getenv("API_FOOTBALL_KEY", ""))
-    return SportMonksProbe(os.getenv("SPORTMONKS_TOKEN", ""))
+    if provider == "sportmonks":
+        return SportMonksProbe(os.getenv("SPORTMONKS_TOKEN", ""))
+    if provider == "goal-api":
+        return GoalApiProbe(os.getenv("GOAL_API_KEY", ""))
+    return ApiFootballComProbe(os.getenv("APIFOOTBALL_KEY", ""))
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Captura respuestas crudas para comparar proveedores")
-    parser.add_argument("provider", choices=("api-football", "sportmonks"))
+    parser.add_argument(
+        "provider",
+        choices=("api-football", "sportmonks", "goal-api", "apifootball-com"),
+    )
     parser.add_argument("operation", choices=("live", "statistics", "events", "odds"))
     parser.add_argument("--fixture-id")
     parser.add_argument("--output-dir", type=Path, default=Path("data/raw/provider-spike"))
@@ -40,7 +49,7 @@ def main() -> int:
     if args.operation == "live":
         result = probe.live_matches()
     elif args.operation in {"statistics", "events"}:
-        if args.provider != "api-football":
+        if args.provider == "sportmonks":
             parser.error("SportMonks incluye statistics y events en en la operación live del spike")
         if not args.fixture_id:
             parser.error(f"--fixture-id es obligatorio para {args.operation}")

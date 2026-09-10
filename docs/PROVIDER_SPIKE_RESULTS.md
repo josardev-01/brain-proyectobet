@@ -1,5 +1,31 @@
 # Resultados del spike de proveedores
 
+## GOAL API y APIFootball.com — observación 2026-09-09
+
+**Estado:** EXPERIMENTAL. Las consultas reales confirman acceso y estructura,
+pero no estabilidad longitudinal ni cobertura garantizada del plan gratuito.
+
+GOAL API devolvió 20 partidos en vivo y declaró una cuota diaria de 1.000
+solicitudes. El endpoint de estadísticas de un partido live incluyó corners,
+ataques, ataques peligrosos, tiros a puerta, tiros fuera y posesión. Su listado
+live no incluyó un minuto corriente fiable: `matchStatus` expuso `LIVE` o
+`HALF_TIME`; los minutos aparecieron solamente en eventos. Por ello no debe ser
+el reloj exclusivo de la heurística hasta resolver esa ausencia.
+
+APIFootball.com devolvió 23 encuentros live de 13 ligas y estadísticas en 20.
+`match_status` incluyó minutos numéricos, `Half Time`, `Finished` y `90+`. Las
+estadísticas observadas incluyeron corners, ataques, ataques peligrosos, tiros a
+puerta, tiros fuera y posesión. La cobertura observada supera las dos ligas que
+la página comercial asigna al plan gratuito; puede corresponder a una
+habilitación inicial y no se considerará permanente sin medirla varios días.
+La consulta de cuotas del día respondió `No odd found (please check your plan)`,
+por lo que esta habilitación no se usará como fuente de cuotas pre-partido. La
+selección inicial de favoritos seguirá usando API-Football mientras se evalúan
+alternativas.
+
+Las claves permanecen en `.env`. APIFootball.com autoriza por IP; desarrollo
+local y VPS necesitan registrar sus IP públicas de salida por separado.
+
 ## API-Football — observación 2026-09-05
 
 **Estado:** EXPERIMENTAL. Una sola observación valida el pipeline, no la calidad general del proveedor.

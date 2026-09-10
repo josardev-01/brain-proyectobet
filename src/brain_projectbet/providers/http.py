@@ -21,6 +21,7 @@ def get_json(
     query: Mapping[str, str] | None = None,
     headers: Mapping[str, str] | None = None,
     timeout_seconds: float = 20,
+    array_root_key: str | None = None,
 ) -> tuple[Mapping[str, Any], float, Mapping[str, str]]:
     url = base_url
     if query:
@@ -43,6 +44,8 @@ def get_json(
             retry_after = None
         raise ProviderHttpError(error.code, retry_after) from None
     elapsed_ms = (perf_counter() - started_at) * 1000
+    if isinstance(payload, list) and array_root_key is not None:
+        payload = {array_root_key: payload}
     if not isinstance(payload, dict):
         raise ValueError("el proveedor devolvió un JSON raíz no reconocido")
     return payload, elapsed_ms, response_headers
