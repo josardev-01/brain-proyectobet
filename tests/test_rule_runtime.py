@@ -20,6 +20,22 @@ def snapshot(minute: int, **overrides) -> MatchSnapshot:
 
 
 class RuleRuntimeTests(unittest.TestCase):
+    def test_exposes_neutral_home_and_away_metrics(self) -> None:
+        snapshots = [snapshot(45, shots_home=2), snapshot(55, shots_home=5)]
+        config = {
+            "feature_window_minutes": 10,
+            "conditions": {
+                "logical": "AND",
+                "conditions": [
+                    {"metric": "shots_home_last_10", "operator": ">=", "value": 3},
+                    {"metric": "home_is_losing", "operator": "=", "value": True},
+                ],
+            },
+        }
+        result = evaluate_strategy_config(config, snapshots, favorite_side="home")
+        self.assertTrue(result.matched)
+        self.assertEqual(result.metrics["shots_home_last_10"], 3)
+
     def test_builds_favorite_window_metrics_and_evaluates(self) -> None:
         config = {
             "strategy_id": "dynamic", "version": 1, "feature_window_minutes": 10,

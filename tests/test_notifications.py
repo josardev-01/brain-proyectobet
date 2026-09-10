@@ -57,6 +57,22 @@ class NotificationTests(unittest.TestCase):
         self.assertEqual(calls[0][1]["chat_id"], "123")
         self.assertNotIn("secret", calls[0][1]["text"])
 
+    def test_formats_user_strategy_without_favorite_language(self) -> None:
+        custom = AlertEvent(
+            alert_id="custom", candidate_id="custom", fixture_id="10",
+            favorite_team_id="", rule_id="home_pressure", rule_version=1,
+            created_at=datetime.now(UTC), minute=62, minute_extra=None,
+            score_favorite=1, score_opponent=0, strategy_name="Presión del local",
+            home_team_name="Local FC", away_team_name="Visitante FC",
+            score_home=1, score_away=0, alert_fields=("score", "shots_on_target"),
+            metrics={"shots_on_target_home": 4, "shots_on_target_away": 1},
+            reasons=("shots_on_target_home >= 4: 4",),
+        )
+        message = format_telegram_alert(custom)
+        self.assertIn("Presión del local", message)
+        self.assertIn("Tiros a puerta: local 4 · visitante 1", message)
+        self.assertNotIn("FAVORITO BAJO PRESIÓN", message)
+
     def test_receipt_prevents_duplicate_delivery(self) -> None:
         identifier = delivery_id("alert-1", "telegram", "123")
         receipt = DeliveryReceipt(identifier, "alert-1", "telegram", datetime.now(UTC))

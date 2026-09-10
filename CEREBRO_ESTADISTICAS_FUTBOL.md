@@ -1,6 +1,6 @@
 # CEREBRO DEL PROYECTO — Estadísticas de Fútbol
 
-**Versión:** 0.4
+**Versión:** 0.5
 **Estado:** Base operativa inicial  
 **Stack base:** Python + FastAPI + PostgreSQL + frontend Node.js  
 **Canal inicial de alertas:** Telegram
@@ -100,6 +100,10 @@ Cada componente nuevo debe justificar al menos una de estas mejoras:
 El sistema será neutral.
 
 Cada usuario decidirá el objetivo de sus estrategias y alertas.
+
+Las métricas configurables se expresan de forma neutral por equipo local o visitante.
+La noción de favorito pre-partido es contexto de estrategias que lo necesiten, no la
+identidad base del catálogo general.
 
 No acoplar el motor de reglas exclusivamente a apuestas deportivas.
 
@@ -689,6 +693,10 @@ Definir una identidad aproximada:
 ```text
 user_id + match_id + rule_id + trigger_window
 ```
+
+Las alertas de estrategias creadas por usuarios son privadas: se asocian al propietario
+y solo se entregan a los endpoints de notificación registrados por ese usuario. Las
+estrategias del sistema con propietario nulo pueden seguir tratándose como globales.
 
 ---
 

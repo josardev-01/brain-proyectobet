@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 
 from brain_projectbet.api.main import create_app
 from brain_projectbet.core.security import hash_password
-from brain_projectbet.database.models import MatchRecord, StrategyRecord, UserRecord
+from brain_projectbet.database.models import AlertRecord, MatchRecord, StrategyRecord, UserRecord
 from brain_projectbet.database.session import Base, build_engine, get_db
 
 
@@ -127,6 +127,22 @@ class ApiTests(unittest.TestCase):
         }
         self.assertEqual(self.client.post("/api/v1/strategies", json=payload, headers=self.auth_headers()).status_code, 422)
 
+    def test_rejects_legacy_favorite_metric_for_user_strategy(self) -> None:
+        payload = {
+            "strategy_key": "legacy_metric", "version": 1, "name": "Legacy metric",
+            "objective_type": "goal", "objective_subject": "home", "horizon_minutes": 10,
+            "config": {
+                "strategy_id": "legacy_metric", "version": 1,
+                "conditions": [{
+                    "metric": "favorite_shots_on_target_last_10", "operator": ">=", "value": 2,
+                }],
+            },
+        }
+        response = self.client.post(
+            "/api/v1/strategies", json=payload, headers=self.auth_headers()
+        )
+        self.assertEqual(response.status_code, 422)
+
     def test_evaluates_declarative_rule(self) -> None:
         response = self.client.post("/api/v1/rules/evaluate", json={
             "expression": {"metric": "corners_last_10", "operator": ">=", "value": 2},
@@ -139,8 +155,48 @@ class ApiTests(unittest.TestCase):
         response = self.client.get("/api/v1/strategy-catalog")
         self.assertEqual(response.status_code, 200)
         values = {item["value"] for item in response.json()["metrics"]}
-        self.assertIn("favorite_is_losing", values)
-        self.assertIn("favorite_dangerous_attacks_last_{window}", values)
+        self.assertIn("home_is_losing", values)
+        self.assertIn("shots_on_target_home", values)
+        metric = next(item for item in response.json()["metrics"] if item["value"] == "shots_on_target_home")
+        self.assertTrue(metric["supports_window"])
+
+    def test_strategy_list_is_private_to_owner(self) -> None:
+        headers = self.auth_headers()
+        with self.sessions.begin() as session:
+            other = UserRecord(
+                email="other@example.com", display_name="Other", active=True,
+                approval_status="APPROVED", created_at=datetime.now(UTC),
+            )
+            session.add(other)
+            session.flush()
+            session.add(StrategyRecord(
+                owner_id=other.id, strategy_key="private_other", version=1,
+                name="Private Other", objective_type="goal", objective_subject="home",
+                horizon_minutes=10, config={"strategy_id": "private_other", "version": 1},
+                active=True, created_at=datetime.now(UTC),
+            ))
+        response = self.client.get("/api/v1/strategies", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("private_other", {item["strategy_key"] for item in response.json()})
+
+    def test_alert_list_is_private_to_owner(self) -> None:
+        headers = self.auth_headers()
+        with self.sessions.begin() as session:
+            other = UserRecord(
+                email="alert-other@example.com", display_name="Other", active=True,
+                approval_status="APPROVED", created_at=datetime.now(UTC),
+            )
+            session.add(other)
+            session.flush()
+            session.add(AlertRecord(
+                alert_id="other-private-alert", owner_id=other.id, fixture_id="88",
+                strategy_key="private", strategy_version=1, created_at=datetime.now(UTC),
+                minute=60, favorite_team_name="", score_favorite=0, score_opponent=0,
+                explanation={},
+            ))
+        response = self.client.get("/api/v1/alerts", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("other-private-alert", {item["alert_id"] for item in response.json()})
 
     def test_register_login_and_current_user(self) -> None:
         headers = self.auth_headers()

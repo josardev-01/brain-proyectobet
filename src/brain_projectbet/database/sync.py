@@ -24,6 +24,16 @@ def _favorite_odds(fixture) -> float:
     return fixture.median_home_odds if fixture.favorite_side == "home" else fixture.median_away_odds
 
 
+def _normalized_probabilities(fixture) -> tuple[float, float, float]:
+    inverse = (
+        1 / fixture.median_home_odds,
+        1 / fixture.median_draw_odds,
+        1 / fixture.median_away_odds,
+    )
+    total = sum(inverse)
+    return tuple(value / total for value in inverse)
+
+
 def _jsonable(value) -> dict:
     return json.loads(json.dumps(asdict(value), default=lambda item: item.isoformat()))
 
@@ -38,6 +48,7 @@ def _timestamp_key(value: datetime) -> datetime:
 def sync_registry(session: Session, registry: Path) -> dict[str, int]:
     created_matches = created_snapshots = 0
     for fixture in load_eligible_fixtures(registry):
+        home_probability, draw_probability, away_probability = _normalized_probabilities(fixture)
         match = session.scalar(select(MatchRecord).where(
             MatchRecord.provider == fixture.provider,
             MatchRecord.provider_match_id == fixture.fixture_id,
@@ -55,6 +66,12 @@ def sync_registry(session: Session, registry: Path) -> dict[str, int]:
                 favorite_side=fixture.favorite_side,
                 favorite_odds=_favorite_odds(fixture),
                 favorite_probability=fixture.favorite_probability,
+                home_odds=fixture.median_home_odds,
+                draw_odds=fixture.median_draw_odds,
+                away_odds=fixture.median_away_odds,
+                home_probability=home_probability,
+                draw_probability=draw_probability,
+                away_probability=away_probability,
                 bookmaker_count=fixture.bookmaker_count,
                 discovered_at=fixture.discovered_at,
                 updated_at=datetime.now(UTC),
@@ -63,6 +80,12 @@ def sync_registry(session: Session, registry: Path) -> dict[str, int]:
             session.flush()
             created_matches += 1
         else:
+            match.home_odds = fixture.median_home_odds
+            match.draw_odds = fixture.median_draw_odds
+            match.away_odds = fixture.median_away_odds
+            match.home_probability = home_probability
+            match.draw_probability = draw_probability
+            match.away_probability = away_probability
             if fixture.home_team_name:
                 match.home_team_name = fixture.home_team_name
             if fixture.away_team_name:
@@ -127,6 +150,7 @@ def sync_strategies(session: Session, directory: Path = Path("config/strategies"
     for path in directory.glob("*.json"):
         config = json.loads(path.read_text(encoding="utf-8"))
         existing = session.scalar(select(StrategyRecord).where(
+            StrategyRecord.owner_id.is_(None),
             StrategyRecord.strategy_key == config["strategy_id"],
             StrategyRecord.version == config["version"],
         ))

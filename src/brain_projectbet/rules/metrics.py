@@ -21,6 +21,28 @@ def build_rule_metrics(
         "minute": snapshot.minute,
         "minute_extra": snapshot.minute_extra,
         "match_status": snapshot.status,
+        "score_home": snapshot.score_home,
+        "score_away": snapshot.score_away,
+        "home_is_losing": (
+            snapshot.score_home < snapshot.score_away
+            if snapshot.score_home is not None and snapshot.score_away is not None
+            else None
+        ),
+        "away_is_losing": (
+            snapshot.score_away < snapshot.score_home
+            if snapshot.score_home is not None and snapshot.score_away is not None
+            else None
+        ),
+        "score_difference_home": (
+            snapshot.score_home - snapshot.score_away
+            if snapshot.score_home is not None and snapshot.score_away is not None
+            else None
+        ),
+        "score_difference_away": (
+            snapshot.score_away - snapshot.score_home
+            if snapshot.score_home is not None and snapshot.score_away is not None
+            else None
+        ),
         "favorite_score": favorite_score,
         "opponent_score": opponent_score,
         "score_difference": (
@@ -52,6 +74,13 @@ def build_rule_metrics(
         "favorite_yellow_cards": getattr(snapshot, f"yellow_cards_{favorite_side}"),
         "opponent_yellow_cards": getattr(snapshot, f"yellow_cards_{opponent_side}"),
     }
+    for metric in (
+        "shots", "shots_on_target", "shots_off_target", "attacks",
+        "dangerous_attacks", "corners", "possession", "xg",
+        "yellow_cards", "red_cards",
+    ):
+        for side in ("home", "away"):
+            metrics[f"{metric}_{side}"] = getattr(snapshot, f"{metric}_{side}")
     if window is None:
         metrics["window_complete"] = False
         return metrics
@@ -61,6 +90,8 @@ def build_rule_metrics(
         "shots", "shots_on_target", "shots_off_target", "attacks",
         "dangerous_attacks", "corners", "xg"
     ):
+        metrics[f"{metric}_home_{suffix}"] = window.deltas.get(f"{metric}_home")
+        metrics[f"{metric}_away_{suffix}"] = window.deltas.get(f"{metric}_away")
         metrics[f"favorite_{metric}_{suffix}"] = window.deltas.get(f"{metric}_{favorite_side}")
         metrics[f"opponent_{metric}_{suffix}"] = window.deltas.get(f"{metric}_{opponent_side}")
     return metrics

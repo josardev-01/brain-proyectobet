@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from brain_projectbet.domain.candidates import CandidateObservation
@@ -30,6 +30,13 @@ class AlertEvent:
     shots_10m: int | float | None = None
     shots_on_target_10m: int | float | None = None
     corners_10m: int | float | None = None
+    owner_id: int | None = None
+    strategy_name: str = ""
+    score_home: int | None = None
+    score_away: int | None = None
+    alert_fields: tuple[str, ...] = ()
+    metrics: dict[str, object] = field(default_factory=dict)
+    reasons: tuple[str, ...] = ()
 
 
 def trigger_once_alert_id(

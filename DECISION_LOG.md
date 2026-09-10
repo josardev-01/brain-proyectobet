@@ -267,3 +267,29 @@ sin ocultar la diferencia entre filtro intuitivo y estrategia validada.
 **Impacto:** Los usuarios pueden crear versiones con ligas, países, ventanas y
 condiciones AND/OR. Los grupos anidados, clonación y etiquetadores de corners o
 tarjetas quedan como incrementos explícitos, no como soporte simulado.
+
+## DEC-027 — Catálogo neutral por local y visitante
+
+**Problema:** El catálogo inicial expresaba varias estadísticas como “favorito” y
+“rival”, trasladando el vocabulario de la primera heurística a todas las estrategias.
+
+**Decisión:** Las métricas configurables se identifican por `home` y `away`. El periodo
+se selecciona por separado como total del partido o últimos N minutos. Se mantienen
+aliases de favorito/rival únicamente para compatibilidad de la estrategia inicial.
+
+**Impacto:** Un usuario puede crear estrategias de local o visitante sin que el motor
+interprete implícitamente cuál era favorito. La diferencia temporal sigue siendo
+explícita porque tiene valor estadístico real.
+
+## DEC-028 — Alertas privadas por propietario de estrategia
+
+**Problema:** El notificador recorría todas las alertas y todos los endpoints, lo que
+podía enviar una estrategia personal a usuarios distintos de su creador.
+
+**Decisión:** Cada alerta de estrategia personal guarda `owner_id` y `strategy_id`.
+La deduplicación incluye usuario, partido y versión, y la entrega selecciona solamente
+los endpoints Telegram del propietario. Las consultas de estrategias, evaluaciones y
+alertas también se filtran por usuario; el administrador conserva acceso global.
+
+**Impacto:** El motor evalúa automáticamente las estrategias activas después de cada
+sincronización y genera alertas individuales sin exponer configuraciones privadas.

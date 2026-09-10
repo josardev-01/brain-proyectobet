@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -280,7 +280,12 @@ def list_match_snapshots(provider: str, fixture_id: str, session: Session = Depe
     "/matches/{provider}/{fixture_id}/evaluations",
     response_model=list[StrategyRuntimeView],
 )
-def list_match_evaluations(provider: str, fixture_id: str, session: Session = Depends(get_db)):
+def list_match_evaluations(
+    provider: str,
+    fixture_id: str,
+    session: Session = Depends(get_db),
+    user: UserRecord = Depends(get_current_user),
+):
     match = session.scalar(select(MatchRecord).where(
         MatchRecord.provider == provider,
         MatchRecord.provider_match_id == fixture_id,
@@ -291,9 +296,15 @@ def list_match_evaluations(provider: str, fixture_id: str, session: Session = De
         SnapshotRecord.match_id == match.id
     ).order_by(SnapshotRecord.captured_at)))
     snapshots = [snapshot_record_to_domain(match, record) for record in records]
-    strategies = list(session.scalars(select(StrategyRecord).where(
-        StrategyRecord.active.is_(True)
-    ).order_by(StrategyRecord.strategy_key, StrategyRecord.version.desc())))
+    strategy_query = select(StrategyRecord).where(StrategyRecord.active.is_(True))
+    if user.role != "ADMIN":
+        strategy_query = strategy_query.where(or_(
+            StrategyRecord.owner_id == user.id,
+            StrategyRecord.owner_id.is_(None),
+        ))
+    strategies = list(session.scalars(strategy_query.order_by(
+        StrategyRecord.strategy_key, StrategyRecord.version.desc()
+    )))
     evaluations = []
     for strategy in strategies:
         try:
@@ -302,6 +313,12 @@ def list_match_evaluations(provider: str, fixture_id: str, session: Session = De
                 snapshots,
                 favorite_side=match.favorite_side,
                 context={
+                    "home_odds": match.home_odds,
+                    "draw_odds": match.draw_odds,
+                    "away_odds": match.away_odds,
+                    "home_probability": match.home_probability,
+                    "draw_probability": match.draw_probability,
+                    "away_probability": match.away_probability,
                     "favorite_odds": match.favorite_odds,
                     "favorite_probability": match.favorite_probability,
                     "league_name": match.league_name,
@@ -332,8 +349,17 @@ def list_match_evaluations(provider: str, fixture_id: str, session: Session = De
 
 
 @router.get("/strategies", response_model=list[StrategyView])
-def list_strategies(session: Session = Depends(get_db)):
-    return list(session.scalars(select(StrategyRecord).order_by(
+def list_strategies(
+    session: Session = Depends(get_db),
+    user: UserRecord = Depends(get_current_user),
+):
+    query = select(StrategyRecord)
+    if user.role != "ADMIN":
+        query = query.where(or_(
+            StrategyRecord.owner_id == user.id,
+            StrategyRecord.owner_id.is_(None),
+        ))
+    return list(session.scalars(query.order_by(
         StrategyRecord.strategy_key, StrategyRecord.version.desc()
     )))
 
@@ -374,6 +400,15 @@ def set_strategy_activation(
         raise HTTPException(status_code=403, detail="solo un administrador modifica estrategias del sistema")
     if record.owner_id is not None and record.owner_id != user.id:
         raise HTTPException(status_code=403, detail="no puedes modificar esta estrategia")
+    if active and record.owner_id is not None:
+        other_versions = session.scalars(select(StrategyRecord).where(
+            StrategyRecord.owner_id == record.owner_id,
+            StrategyRecord.strategy_key == record.strategy_key,
+            StrategyRecord.id != record.id,
+            StrategyRecord.active.is_(True),
+        ))
+        for other in other_versions:
+            other.active = False
     record.active = active
     session.commit()
     session.refresh(record)
@@ -384,8 +419,12 @@ def set_strategy_activation(
 def list_alerts(
     limit: int = Query(default=50, ge=1, le=200),
     session: Session = Depends(get_db),
+    user: UserRecord = Depends(get_current_user),
 ):
-    return list(session.scalars(select(AlertRecord).order_by(
+    query = select(AlertRecord)
+    if user.role != "ADMIN":
+        query = query.where(or_(AlertRecord.owner_id == user.id, AlertRecord.owner_id.is_(None)))
+    return list(session.scalars(query.order_by(
         AlertRecord.created_at.desc()
     ).limit(limit)))
 

@@ -65,6 +65,49 @@ class DatabaseNotificationTests(unittest.TestCase):
             self.assertEqual(sent, ["alert-1"])
             engine.dispose()
 
+    def test_owned_alert_is_only_delivered_to_its_owner(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            engine = build_engine(f"sqlite:///{(Path(directory) / 'private.db').as_posix()}")
+            Base.metadata.create_all(engine)
+            sessions = sessionmaker(bind=engine, expire_on_commit=False)
+            now = datetime.now(UTC)
+            alert = AlertEvent(
+                alert_id="private-alert", candidate_id="candidate", fixture_id="9",
+                favorite_team_id="", rule_id="owner_rule", rule_version=1,
+                created_at=now, minute=55, minute_extra=None,
+                score_favorite=0, score_opponent=0, owner_id=1,
+            )
+            payload = asdict(alert)
+            payload["created_at"] = now.isoformat()
+            with sessions.begin() as session:
+                owner = UserRecord(email="owner@example.com", display_name="Owner", active=True, created_at=now)
+                other = UserRecord(email="other@example.com", display_name="Other", active=True, created_at=now)
+                session.add_all([owner, other])
+                session.flush()
+                session.add_all([
+                    NotificationEndpointRecord(owner_id=owner.id, channel="telegram", destination="111", label="Owner", enabled=True, created_at=now),
+                    NotificationEndpointRecord(owner_id=other.id, channel="telegram", destination="222", label="Other", enabled=True, created_at=now),
+                ])
+                session.add(AlertRecord(
+                    alert_id=alert.alert_id, owner_id=owner.id, fixture_id="9",
+                    strategy_key="owner_rule", strategy_version=1, created_at=now,
+                    minute=55, favorite_team_name="", score_favorite=0, score_opponent=0,
+                    explanation=payload,
+                ))
+            destinations = []
+
+            def factory(token, destination):
+                destinations.append(destination)
+                return RecordingNotifier([])
+
+            with sessions() as session:
+                result = deliver_pending_alerts(
+                    session, telegram_token="secret", notifier_factory=factory
+                )
+            self.assertEqual(result["sent"], 1)
+            self.assertEqual(destinations, ["111"])
+            engine.dispose()
+
 
 if __name__ == "__main__":
     unittest.main()

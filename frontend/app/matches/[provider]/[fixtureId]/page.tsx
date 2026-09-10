@@ -1,12 +1,14 @@
 import { PageHeader } from "@/components/shell";
 import { apiGet, type Match, type Snapshot, type StrategyEvaluation } from "@/lib/api";
+import { cookies } from "next/headers";
 
 export default async function MatchDetail({ params }: { params: Promise<{ provider: string; fixtureId: string }> }) {
   const { provider, fixtureId } = await params;
+  const cookie = (await cookies()).toString();
   const [{ data: match, online }, { data: snapshots }, { data: evaluations }] = await Promise.all([
     apiGet<Match | null>(`/matches/${provider}/${fixtureId}`, null),
     apiGet<Snapshot[]>(`/matches/${provider}/${fixtureId}/snapshots`, []),
-    apiGet<StrategyEvaluation[]>(`/matches/${provider}/${fixtureId}/evaluations`, []),
+    apiGet<StrategyEvaluation[]>(`/matches/${provider}/${fixtureId}/evaluations`, [], cookie),
   ]);
   if (!match) return <><PageHeader eyebrow="Partido" title={`Fixture ${fixtureId}`} copy="No se encontró este partido en la base." online={online} /></>;
   const latest = snapshots.at(-1);

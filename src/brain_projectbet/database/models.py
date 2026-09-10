@@ -59,6 +59,12 @@ class MatchRecord(Base):
     favorite_side: Mapped[str] = mapped_column(String(8))
     favorite_odds: Mapped[float] = mapped_column(Float)
     favorite_probability: Mapped[float] = mapped_column(Float)
+    home_odds: Mapped[float | None] = mapped_column(Float, nullable=True)
+    draw_odds: Mapped[float | None] = mapped_column(Float, nullable=True)
+    away_odds: Mapped[float | None] = mapped_column(Float, nullable=True)
+    home_probability: Mapped[float | None] = mapped_column(Float, nullable=True)
+    draw_probability: Mapped[float | None] = mapped_column(Float, nullable=True)
+    away_probability: Mapped[float | None] = mapped_column(Float, nullable=True)
     bookmaker_count: Mapped[int] = mapped_column(Integer)
     status: Mapped[str] = mapped_column(String(20), default="SCHEDULED")
     score_home: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -113,7 +119,9 @@ class SnapshotRecord(Base):
 
 class StrategyRecord(Base):
     __tablename__ = "strategies"
-    __table_args__ = (UniqueConstraint("strategy_key", "version", name="uq_strategy_version"),)
+    __table_args__ = (
+        UniqueConstraint("owner_id", "strategy_key", "version", name="uq_owner_strategy_version"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     owner_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
@@ -134,6 +142,12 @@ class AlertRecord(Base):
     __table_args__ = (Index("ix_alerts_created", "created_at"),)
 
     alert_id: Mapped[str] = mapped_column(String(220), primary_key=True)
+    owner_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    strategy_id: Mapped[int | None] = mapped_column(
+        ForeignKey("strategies.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     match_id: Mapped[int | None] = mapped_column(ForeignKey("matches.id"), nullable=True)
     fixture_id: Mapped[str] = mapped_column(String(80), index=True)
     strategy_key: Mapped[str] = mapped_column(String(100))

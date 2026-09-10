@@ -2,10 +2,12 @@ import { Empty, PageHeader } from "@/components/shell";
 import { apiGet, type Strategy, type StrategyCatalog } from "@/lib/api";
 import { StrategyForm } from "@/components/strategy-form";
 import { StrategyActivation } from "@/components/strategy-activation";
+import { cookies } from "next/headers";
 
 export default async function StrategiesPage() {
+  const cookie = (await cookies()).toString();
   const [{ data, online }, { data: catalog }] = await Promise.all([
-    apiGet<Strategy[]>("/strategies", []),
+    apiGet<Strategy[]>("/strategies", [], cookie),
     apiGet<StrategyCatalog>("/strategy-catalog", { objectives: [], subjects: [], operators: [], windows: [10], metrics: [], alert_fields: [] }),
   ]);
   return <><PageHeader eyebrow="Motor dinámico" title="Estrategias" copy="Cada versión conserva su objetivo, configuración y evidencia." online={online} />

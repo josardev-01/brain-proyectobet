@@ -7,6 +7,7 @@ from pathlib import Path
 from brain_projectbet.database import models  # noqa: F401
 from brain_projectbet.database.session import Base, engine, session_scope
 from brain_projectbet.database.sync import sync_alerts, sync_backtests, sync_registry, sync_strategies
+from brain_projectbet.rules.strategy_alerts import evaluate_owned_strategy_alerts
 
 
 def main() -> int:
@@ -16,7 +17,10 @@ def main() -> int:
 
     registries = args.registry or sorted(Path("data/raw/eligible").glob("*.json"))
     Base.metadata.create_all(engine)
-    totals = {"matches": 0, "snapshots": 0, "strategies": 0, "alerts": 0, "backtests": 0}
+    totals = {
+        "matches": 0, "snapshots": 0, "strategies": 0, "alerts": 0,
+        "user_strategy_alerts": 0, "backtests": 0,
+    }
     with session_scope() as session:
         for registry in registries:
             synced = sync_registry(session, registry)
@@ -24,6 +28,8 @@ def main() -> int:
             totals["snapshots"] += synced["snapshots"]
         totals["strategies"] = sync_strategies(session)
         totals["alerts"] = sync_alerts(session)
+        strategy_alerts = evaluate_owned_strategy_alerts(session)
+        totals["user_strategy_alerts"] = strategy_alerts["created"]
         totals["backtests"] = sync_backtests(session)
     print(json.dumps({"registries": len(registries), **totals}))
     return 0

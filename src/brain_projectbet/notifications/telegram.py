@@ -11,6 +11,8 @@ PostJson = Callable[[str, Mapping[str, Any], float], Mapping[str, Any]]
 
 
 def format_telegram_alert(alert: AlertEvent) -> str:
+    if alert.strategy_name:
+        return _format_user_strategy_alert(alert)
     minute = f"{alert.minute}+{alert.minute_extra}" if alert.minute_extra else str(alert.minute)
     match_name = (
         f"{alert.home_team_name} vs {alert.away_team_name}"
@@ -40,6 +42,60 @@ def format_telegram_alert(alert: AlertEvent) -> str:
         "",
         f"Regla: {alert.rule_id} v{alert.rule_version} ({alert.rule_status})",
     ])
+
+
+def _display(value: object) -> str:
+    if value is None:
+        return "N/D"
+    if isinstance(value, float):
+        return f"{value:.2f}"
+    return str(value)
+
+
+def _format_user_strategy_alert(alert: AlertEvent) -> str:
+    minute = f"{alert.minute}+{alert.minute_extra}" if alert.minute_extra else str(alert.minute)
+    metrics = alert.metrics
+    selected = set(alert.alert_fields)
+    lines = [
+        "⚽ ESTRATEGIA ACTIVADA",
+        "",
+        alert.strategy_name,
+        f"{alert.home_team_name} vs {alert.away_team_name}",
+        f"Minuto: {minute}'",
+    ]
+    if "score" in selected:
+        lines.append(f"Marcador: {_display(alert.score_home)}-{_display(alert.score_away)}")
+    if "prematch_odds" in selected:
+        lines.extend([
+            "",
+            "Cuotas pre-partido:",
+            f"Local {_display(metrics.get('home_odds'))} · Empate {_display(metrics.get('draw_odds'))} · Visitante {_display(metrics.get('away_odds'))}",
+        ])
+    stat_fields = (
+        ("shots", "Tiros", "shots"),
+        ("shots_on_target", "Tiros a puerta", "shots_on_target"),
+        ("attacks", "Ataques", "attacks"),
+        ("dangerous_attacks", "Ataques peligrosos", "dangerous_attacks"),
+        ("corners", "Corners", "corners"),
+        ("possession", "Posesión", "possession"),
+    )
+    visible_stats = []
+    for field_name, label, metric in stat_fields:
+        if field_name in selected:
+            visible_stats.append(
+                f"{label}: local {_display(metrics.get(f'{metric}_home'))} · visitante {_display(metrics.get(f'{metric}_away'))}"
+            )
+    if "cards" in selected:
+        visible_stats.extend([
+            f"Amarillas: local {_display(metrics.get('yellow_cards_home'))} · visitante {_display(metrics.get('yellow_cards_away'))}",
+            f"Rojas: local {_display(metrics.get('red_cards_home'))} · visitante {_display(metrics.get('red_cards_away'))}",
+        ])
+    if visible_stats:
+        lines.extend(["", "Estadísticas al activarse:", *visible_stats])
+    if alert.reasons:
+        lines.extend(["", "Condiciones evaluadas:", *[f"• {reason}" for reason in alert.reasons[:8]]])
+    lines.extend(["", f"Estrategia: {alert.rule_id} v{alert.rule_version} ({alert.rule_status})"])
+    return "\n".join(lines)
 
 
 def _post_json(url: str, payload: Mapping[str, Any], timeout: float) -> Mapping[str, Any]:

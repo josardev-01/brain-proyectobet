@@ -25,12 +25,20 @@ datos ausentes fallan de forma cerrada y explicable.
 
 Métricas iniciales:
 
-- minuto, marcador y favorito perdiendo;
-- cuota y probabilidad pre-partido;
+- minuto, marcador y estado del local o visitante;
+- cuota y probabilidad pre-partido por local, empate y visitante;
 - tiros, tiros a puerta y tiros fuera;
 - ataques y ataques peligrosos;
 - corners, posesión y tarjetas;
 - ventanas recientes de 5, 10 o 15 minutos.
+
+Las métricas se identifican de forma neutral por equipo local o visitante. Cuando una
+estadística admite historia, el periodo se elige separadamente como total del partido o
+últimos N minutos; “ventana reciente” no forma parte del nombre de la estadística.
+
+Cada estrategia pertenece al usuario que la crea. Si está activa, se evalúa después de
+cada sincronización live y su alerta solo se entrega a los destinos Telegram de ese
+propietario.
 
 El alcance admite ligas incluidas, ligas excluidas y países. Las condiciones
 admiten `AND`, `OR`, `>`, `>=`, `=`, `!=`, `<`, `<=` y `BETWEEN`.

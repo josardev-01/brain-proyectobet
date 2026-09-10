@@ -5,12 +5,9 @@ import { useRouter } from "next/navigation";
 import type { StrategyCatalog, StrategyMetric } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
-type ConditionDraft = { id: number; metric: string; operator: string; value: string; valueTo: string };
+type ConditionDraft = { id: number; metric: string; period: "total" | "window"; operator: string; value: string; valueTo: string };
 const initialConditions: ConditionDraft[] = [
-  { id: 1, metric: "favorite_odds", operator: "<=", value: "1.55", valueTo: "" },
-  { id: 2, metric: "minute", operator: ">=", value: "45", valueTo: "" },
-  { id: 3, metric: "favorite_is_losing", operator: "=", value: "true", valueTo: "" },
-  { id: 4, metric: "favorite_shots_on_target_last_{window}", operator: ">=", value: "2", valueTo: "" },
+  { id: 1, metric: "minute", period: "total", operator: ">=", value: "45", valueTo: "" },
 ];
 
 function splitList(value: FormDataEntryValue | null) {
@@ -53,7 +50,9 @@ export function StrategyForm({ catalog }: { catalog: StrategyCatalog }) {
         const metric = metricByValue.get(condition.metric);
         const value = typedValue(condition.value, metric);
         return {
-          metric: condition.metric.replace("{window}", String(windowMinutes)),
+          metric: condition.period === "window"
+            ? `${condition.metric}_last_${windowMinutes}`
+            : condition.metric,
           operator: condition.operator,
           value: condition.operator === "BETWEEN" ? [value, typedValue(condition.valueTo, metric)] : value,
         };
@@ -117,15 +116,16 @@ export function StrategyForm({ catalog }: { catalog: StrategyCatalog }) {
       {conditions.map((condition, index) => {
         const selectedMetric = metricByValue.get(condition.metric);
         return <div className="condition-row" key={condition.id}>
-          <span>{index + 1}</span>
-          <select aria-label={`Métrica ${index + 1}`} value={condition.metric} onChange={event => updateCondition(condition.id, { metric: event.target.value })}>{catalog.metrics.map(metric => <option key={metric.value} value={metric.value}>{metric.group} · {metric.label}</option>)}</select>
+          <span className="condition-index">{index + 1}</span>
+          <select aria-label={`Métrica ${index + 1}`} value={condition.metric} onChange={event => updateCondition(condition.id, { metric: event.target.value, period: "total" })}>{catalog.metrics.map(metric => <option key={metric.value} value={metric.value}>{metric.label}</option>)}</select>
+          {selectedMetric?.supports_window ? <select aria-label={`Periodo ${index + 1}`} value={condition.period} onChange={event => updateCondition(condition.id, { period: event.target.value as "total" | "window" })}><option value="total">Total del partido</option><option value="window">Últimos {windowMinutes} min</option></select> : <span className="condition-period">Valor actual</span>}
           <select aria-label={`Operador ${index + 1}`} value={condition.operator} onChange={event => updateCondition(condition.id, { operator: event.target.value })}>{catalog.operators.map(operator => <option key={operator}>{operator}</option>)}</select>
           {selectedMetric?.type === "boolean" ? <select aria-label={`Valor ${index + 1}`} value={condition.value} onChange={event => updateCondition(condition.id, { value: event.target.value })}><option value="true">Sí</option><option value="false">No</option></select> : <input aria-label={`Valor ${index + 1}`} value={condition.value} onChange={event => updateCondition(condition.id, { value: event.target.value })} required />}
           {condition.operator === "BETWEEN" && <input aria-label={`Valor final ${index + 1}`} value={condition.valueTo} onChange={event => updateCondition(condition.id, { valueTo: event.target.value })} placeholder="hasta" required />}
           <button className="danger compact" type="button" onClick={() => setConditions(current => current.filter(item => item.id !== condition.id))} disabled={conditions.length === 1}>Quitar</button>
         </div>;
       })}
-      <button className="quiet add-condition" type="button" onClick={() => setConditions(current => [...current, { id: Date.now(), metric: "minute", operator: ">=", value: "45", valueTo: "" }])}>+ Agregar condición</button>
+      <button className="quiet add-condition" type="button" onClick={() => setConditions(current => [...current, { id: Date.now(), metric: "minute", period: "total", operator: ">=", value: "45", valueTo: "" }])}>+ Agregar condición</button>
     </div></fieldset>
     <fieldset><legend>4. Contenido de la alerta</legend><div className="check-grid">{catalog.alert_fields.map(field => <label className="check-option" key={field.value}><input type="checkbox" checked={alertFields.includes(field.value)} onChange={event => setAlertFields(current => event.target.checked ? [...current, field.value] : current.filter(value => value !== field.value))} />{field.label}</label>)}</div></fieldset>
     <div className="form-actions"><p aria-live="polite">{message || "La estrategia se crea inactiva para que puedas revisarla."}</p><button disabled={pending} type="submit">{pending ? "Guardando…" : "Guardar versión"}</button></div>

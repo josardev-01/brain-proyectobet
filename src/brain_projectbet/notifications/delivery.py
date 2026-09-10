@@ -49,7 +49,12 @@ def deliver_pending_alerts(
     alerts = list(session.scalars(select(AlertRecord).order_by(AlertRecord.created_at)))
     sent = failed = skipped = attempted = 0
     for alert in alerts:
-        for endpoint in endpoints:
+        eligible_endpoints = (
+            [endpoint for endpoint in endpoints if endpoint.owner_id == alert.owner_id]
+            if alert.owner_id is not None
+            else endpoints
+        )
+        for endpoint in eligible_endpoints:
             delivery = session.scalar(select(NotificationDeliveryRecord).where(
                 NotificationDeliveryRecord.alert_id == alert.alert_id,
                 NotificationDeliveryRecord.endpoint_id == endpoint.id,

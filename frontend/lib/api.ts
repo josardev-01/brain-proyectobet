@@ -42,7 +42,7 @@ export type Strategy = {
   config: Record<string, unknown>;
 };
 
-export type StrategyMetric = { value: string; label: string; group: string; type: "number" | "boolean" };
+export type StrategyMetric = { value: string; label: string; group: string; type: "number" | "boolean"; supports_window: boolean };
 export type StrategyCatalog = {
   objectives: { value: string; label: string }[];
   subjects: { value: string; label: string }[];
@@ -93,6 +93,7 @@ export type StrategyEvaluation = {
 
 export type Alert = {
   alert_id: string;
+  owner_id: number | null;
   fixture_id: string;
   strategy_key: string;
   strategy_version: number;
@@ -103,15 +104,25 @@ export type Alert = {
   score_favorite: number;
   score_opponent: number;
   delivery_status: string;
+  explanation: {
+    strategy_name?: string;
+    home_team_name?: string;
+    away_team_name?: string;
+    score_home?: number | null;
+    score_away?: number | null;
+  };
 };
 
 const API_URL = process.env.API_INTERNAL_URL
   ?? process.env.NEXT_PUBLIC_API_URL
   ?? "http://localhost:8000/api/v1";
 
-export async function apiGet<T>(path: string, fallback: T): Promise<{ data: T; online: boolean }> {
+export async function apiGet<T>(path: string, fallback: T, cookie?: string): Promise<{ data: T; online: boolean }> {
   try {
-    const response = await fetch(`${API_URL}${path}`, { cache: "no-store" });
+    const response = await fetch(`${API_URL}${path}`, {
+      cache: "no-store",
+      headers: cookie ? { cookie } : undefined,
+    });
     if (!response.ok) return { data: fallback, online: false };
     return { data: (await response.json()) as T, online: true };
   } catch {

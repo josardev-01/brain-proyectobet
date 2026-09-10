@@ -120,4 +120,8 @@ El constructor de estrategias para usuarios registrados se encuentra en
 [`docs/STRATEGY_BUILDER.md`](docs/STRATEGY_BUILDER.md) para el contrato y sus
 límites actuales.
 
+Las métricas se eligen por local/visitante y el periodo total/últimos N minutos se
+configura por separado. Las estrategias activas de cada usuario generan alertas privadas
+dirigidas únicamente a sus endpoints Telegram.
+
 Cada push y pull request ejecuta en GitHub Actions las pruebas del backend, verifica las migraciones, comprueba TypeScript y compila el frontend. `/health` confirma que el proceso API responde y `/ready` comprueba además la conexión con la base de datos.

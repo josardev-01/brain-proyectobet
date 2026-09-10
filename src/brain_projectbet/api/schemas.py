@@ -23,6 +23,12 @@ class MatchSummary(BaseModel):
     favorite_side: str
     favorite_odds: float
     favorite_probability: float
+    home_odds: float | None
+    draw_odds: float | None
+    away_odds: float | None
+    home_probability: float | None
+    draw_probability: float | None
+    away_probability: float | None
     status: str
     score_home: int | None
     score_away: int | None
@@ -101,6 +107,30 @@ class StrategyCreate(BaseModel):
             validate_expression(expression)
         except InvalidExpression as error:
             raise ValueError(str(error)) from error
+        window = self.config.get("feature_window_minutes", 10)
+        if window not in STRATEGY_CATALOG["windows"]:
+            raise ValueError("feature_window_minutes no está permitido")
+        allowed_metrics = {item["value"] for item in STRATEGY_CATALOG["metrics"]}
+        for item in STRATEGY_CATALOG["metrics"]:
+            if item.get("supports_window"):
+                allowed_metrics.add(f"{item['value']}_last_{window}")
+
+        def metric_names(node: dict[str, Any]):
+            if "logical" in node:
+                for child in node.get("conditions", []):
+                    yield from metric_names(child)
+            elif isinstance(node.get("metric"), str):
+                yield node["metric"]
+
+        unknown = sorted(set(metric_names(expression)) - allowed_metrics)
+        if unknown:
+            raise ValueError(f"métricas no permitidas: {', '.join(unknown)}")
+        objectives = {item["value"] for item in STRATEGY_CATALOG["objectives"]}
+        subjects = {item["value"] for item in STRATEGY_CATALOG["subjects"]}
+        if self.objective_type not in objectives or self.objective_subject not in subjects:
+            raise ValueError("objetivo no permitido")
+        if self.statistical_status != "HEURÍSTICA":
+            raise ValueError("una estrategia creada por usuario debe comenzar como HEURÍSTICA")
         scope = self.config.get("scope", {})
         if not isinstance(scope, dict):
             raise ValueError("scope debe ser un objeto")
@@ -121,6 +151,7 @@ class AlertView(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     alert_id: str
+    owner_id: int | None
     fixture_id: str
     strategy_key: str
     strategy_version: int
