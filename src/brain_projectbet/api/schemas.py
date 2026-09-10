@@ -6,6 +6,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from brain_projectbet.rules.expression import InvalidExpression, validate_expression
+from brain_projectbet.rules.catalog import STRATEGY_CATALOG
 
 
 class MatchSummary(BaseModel):
@@ -40,10 +41,20 @@ class SnapshotView(BaseModel):
     shots_away: int | None
     shots_on_target_home: int | None
     shots_on_target_away: int | None
+    shots_off_target_home: int | None
+    shots_off_target_away: int | None
+    attacks_home: int | None
+    attacks_away: int | None
+    dangerous_attacks_home: int | None
+    dangerous_attacks_away: int | None
     corners_home: int | None
     corners_away: int | None
     possession_home: float | None
     possession_away: float | None
+    yellow_cards_home: int | None
+    yellow_cards_away: int | None
+    red_cards_home: int | None
+    red_cards_away: int | None
 
 
 class StrategyView(BaseModel):
@@ -81,14 +92,28 @@ class StrategyCreate(BaseModel):
         if configured_id != self.strategy_key or configured_version != self.version:
             raise ValueError("strategy_id y version del config deben coincidir con la identidad")
         conditions = self.config.get("conditions")
-        if conditions:
-            expression = conditions if isinstance(conditions, dict) else {
-                "logical": "AND", "conditions": conditions
-            }
-            try:
-                validate_expression(expression)
-            except InvalidExpression as error:
-                raise ValueError(str(error)) from error
+        if not conditions:
+            raise ValueError("la estrategia debe contener al menos una condición")
+        expression = conditions if isinstance(conditions, dict) else {
+            "logical": "AND", "conditions": conditions
+        }
+        try:
+            validate_expression(expression)
+        except InvalidExpression as error:
+            raise ValueError(str(error)) from error
+        scope = self.config.get("scope", {})
+        if not isinstance(scope, dict):
+            raise ValueError("scope debe ser un objeto")
+        for key in ("leagues_included", "leagues_excluded", "countries_included"):
+            values = scope.get(key, [])
+            if not isinstance(values, list) or len(values) > 100:
+                raise ValueError(f"{key} debe ser una lista de hasta 100 elementos")
+            if any(not isinstance(item, str) or not item.strip() or len(item) > 160 for item in values):
+                raise ValueError(f"{key} contiene un valor inválido")
+        allowed_fields = {item["value"] for item in STRATEGY_CATALOG["alert_fields"]}
+        alert_fields = self.config.get("alert_fields", [])
+        if not isinstance(alert_fields, list) or not set(alert_fields).issubset(allowed_fields):
+            raise ValueError("alert_fields contiene un campo no permitido")
         return self
 
 

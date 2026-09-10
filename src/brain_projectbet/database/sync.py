@@ -92,6 +92,12 @@ def sync_registry(session: Session, registry: Path) -> dict[str, int]:
                 shots_away=snapshot.shots_away,
                 shots_on_target_home=snapshot.shots_on_target_home,
                 shots_on_target_away=snapshot.shots_on_target_away,
+                shots_off_target_home=snapshot.shots_off_target_home,
+                shots_off_target_away=snapshot.shots_off_target_away,
+                attacks_home=snapshot.attacks_home,
+                attacks_away=snapshot.attacks_away,
+                dangerous_attacks_home=snapshot.dangerous_attacks_home,
+                dangerous_attacks_away=snapshot.dangerous_attacks_away,
                 corners_home=snapshot.corners_home,
                 corners_away=snapshot.corners_away,
                 possession_home=snapshot.possession_home,
@@ -100,6 +106,8 @@ def sync_registry(session: Session, registry: Path) -> dict[str, int]:
                 xg_away=snapshot.xg_away,
                 red_cards_home=snapshot.red_cards_home,
                 red_cards_away=snapshot.red_cards_away,
+                yellow_cards_home=snapshot.yellow_cards_home,
+                yellow_cards_away=snapshot.yellow_cards_away,
                 raw_metadata=dict(snapshot.raw_metadata or {}),
             ))
             existing_times.add(captured_key)

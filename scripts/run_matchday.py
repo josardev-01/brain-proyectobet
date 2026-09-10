@@ -64,6 +64,10 @@ def main() -> int:
     parser.add_argument("--interval-seconds", type=int, default=600)
     parser.add_argument("--maximum-matches", type=int, default=3)
     parser.add_argument("--daily-reserve", type=int, default=15)
+    parser.add_argument(
+        "--live-provider", choices=("api-football", "apifootball-com"),
+        default="apifootball-com",
+    )
     parser.add_argument("--once", action="store_true", help="Ejecuta solo la accion que corresponde ahora")
     parser.add_argument("--dry-run", action="store_true", help="Muestra el plan sin consultar al proveedor")
     parser.add_argument(
@@ -93,11 +97,18 @@ def main() -> int:
         now = datetime.now(UTC)
         action, next_at = action_at(plan, now)
         if action == "monitor":
-            exit_code, payload = run_script("monitor_candidates.py", [
+            monitor_script = (
+                "monitor_hybrid_candidates.py"
+                if args.live_provider == "apifootball-com"
+                else "monitor_candidates.py"
+            )
+            monitor_arguments = [
                 *common,
                 "--cycles", "1",
-                "--maximum-matches", str(args.maximum_matches),
-            ])
+            ]
+            if args.live_provider == "api-football":
+                monitor_arguments.extend(["--maximum-matches", str(args.maximum_matches)])
+            exit_code, payload = run_script(monitor_script, monitor_arguments)
             if exit_code or (payload and payload.get("stopped")):
                 return exit_code
             if (

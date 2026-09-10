@@ -66,5 +66,33 @@ services:
       api:
         condition: service_healthy
 
+  monitor:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    restart: unless-stopped
+    command:
+      - sh
+      - -c
+      - >-
+        while true; do
+          day=$$(date -u +%F);
+          registry="data/raw/eligible/$$day.json";
+          if [ ! -f "$$registry" ]; then
+            python scripts/discover_candidates.py --date "$$day" --max-pages 3 --daily-reserve 15;
+          fi;
+          python scripts/run_matchday.py --registry "$$registry" --live-provider apifootball-com --interval-seconds 120 --daily-reserve 15;
+          sleep 300;
+        done
+    environment:
+      DATABASE_URL: postgresql+psycopg://projectbet:projectbet_local@postgres:5432/projectbet
+      API_FOOTBALL_KEY: ${API_FOOTBALL_KEY:?API_FOOTBALL_KEY is required}
+      APIFOOTBALL_KEY: ${APIFOOTBALL_KEY:?APIFOOTBALL_KEY is required}
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      api:
+        condition: service_healthy
+
 volumes:
   postgres_data:

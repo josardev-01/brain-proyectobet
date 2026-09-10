@@ -18,6 +18,12 @@ export default async function MatchDetail({ params }: { params: Promise<{ provid
       <article className="metric"><span>Tiros</span><strong>{latest?.shots_home ?? "–"} : {latest?.shots_away ?? "–"}</strong><small>acumulado observado</small></article>
       <article className="metric"><span>Corners</span><strong>{latest?.corners_home ?? "–"} : {latest?.corners_away ?? "–"}</strong><small>acumulado observado</small></article>
     </section>
+    <section className="hero-grid detail-metrics secondary-metrics">
+      <article className="metric"><span>Ataques peligrosos</span><strong>{latest?.dangerous_attacks_home ?? "–"} : {latest?.dangerous_attacks_away ?? "–"}</strong><small>acumulado observado</small></article>
+      <article className="metric"><span>Ataques</span><strong>{latest?.attacks_home ?? "–"} : {latest?.attacks_away ?? "–"}</strong><small>acumulado observado</small></article>
+      <article className="metric"><span>Posesión</span><strong>{latest?.possession_home ?? "–"} : {latest?.possession_away ?? "–"}</strong><small>porcentaje</small></article>
+      <article className="metric"><span>Tarjetas</span><strong>{latest?.yellow_cards_home ?? "–"} : {latest?.yellow_cards_away ?? "–"}</strong><small>amarillas · rojas {latest?.red_cards_home ?? "–"}:{latest?.red_cards_away ?? "–"}</small></article>
+    </section>
     <section className="panel timeline"><div className="panel-head"><div><p className="eyebrow">Historia</p><h2>Snapshots disponibles</h2></div><b>{snapshots.length}</b></div>
       {snapshots.map((snapshot, index) => <div className="timeline-row" key={`${snapshot.captured_at}-${index}`}><span>{snapshot.minute ?? "–"}&apos;</span><div><b>{snapshot.score_home ?? "–"} : {snapshot.score_away ?? "–"}</b><small>SOT {snapshot.shots_on_target_home ?? "–"}:{snapshot.shots_on_target_away ?? "–"} · tiros {snapshot.shots_home ?? "–"}:{snapshot.shots_away ?? "–"} · corners {snapshot.corners_home ?? "–"}:{snapshot.corners_away ?? "–"}</small></div><time>{new Date(snapshot.captured_at).toLocaleTimeString("es-PY")}</time></div>)}
     </section>

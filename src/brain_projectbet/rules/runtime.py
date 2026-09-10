@@ -22,6 +22,7 @@ def evaluate_strategy_config(
     snapshots: Iterable[MatchSnapshot],
     *,
     favorite_side: str,
+    context: dict[str, Any] | None = None,
 ) -> StrategyRuntimeResult:
     ordered = sorted(
         snapshots,
@@ -42,6 +43,27 @@ def evaluate_strategy_config(
     )
     window = derive_window(ordered, window_minutes=window_minutes)
     metrics = build_rule_metrics(ordered[-1], window, favorite_side=favorite_side)
+    metrics.update(context or {})
+    scope = config.get("scope", {})
+    league = str(metrics.get("league_name", ""))
+    country = str(metrics.get("country", ""))
+    included = {str(item).casefold() for item in scope.get("leagues_included", [])}
+    excluded = {str(item).casefold() for item in scope.get("leagues_excluded", [])}
+    countries = {str(item).casefold() for item in scope.get("countries_included", [])}
+    scope_reasons = []
+    if included and league.casefold() not in included:
+        scope_reasons.append("league_not_included")
+    if league.casefold() in excluded:
+        scope_reasons.append("league_excluded")
+    if countries and country.casefold() not in countries:
+        scope_reasons.append("country_not_included")
+    if scope_reasons:
+        return StrategyRuntimeResult(
+            matched=False,
+            reasons=tuple(scope_reasons),
+            missing_metrics=(),
+            metrics=metrics,
+        )
     result: ExpressionResult = evaluate_expression(expression, metrics)
     return StrategyRuntimeResult(
         matched=result.matched,

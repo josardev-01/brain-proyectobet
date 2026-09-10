@@ -50,6 +50,19 @@ class RuleRuntimeTests(unittest.TestCase):
         with self.assertRaises(InvalidExpression):
             evaluate_strategy_config({"conditions": []}, [], favorite_side="home")
 
+    def test_scope_excludes_a_league_before_rule_match(self) -> None:
+        result = evaluate_strategy_config(
+            {
+                "scope": {"leagues_excluded": ["Friendly"]},
+                "conditions": [{"metric": "minute", "operator": ">=", "value": 45}],
+            },
+            [snapshot(60)],
+            favorite_side="home",
+            context={"league_name": "Friendly", "country": "Test"},
+        )
+        self.assertFalse(result.matched)
+        self.assertEqual(result.reasons, ("league_excluded",))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -39,6 +39,17 @@ export type Strategy = {
   horizon_minutes: number;
   active: boolean;
   owner_id?: number | null;
+  config: Record<string, unknown>;
+};
+
+export type StrategyMetric = { value: string; label: string; group: string; type: "number" | "boolean" };
+export type StrategyCatalog = {
+  objectives: { value: string; label: string }[];
+  subjects: { value: string; label: string }[];
+  operators: string[];
+  windows: number[];
+  metrics: StrategyMetric[];
+  alert_fields: { value: string; label: string }[];
 };
 
 export type Snapshot = {
@@ -52,10 +63,20 @@ export type Snapshot = {
   shots_away: number | null;
   shots_on_target_home: number | null;
   shots_on_target_away: number | null;
+  shots_off_target_home: number | null;
+  shots_off_target_away: number | null;
+  attacks_home: number | null;
+  attacks_away: number | null;
+  dangerous_attacks_home: number | null;
+  dangerous_attacks_away: number | null;
   corners_home: number | null;
   corners_away: number | null;
   possession_home: number | null;
   possession_away: number | null;
+  yellow_cards_home: number | null;
+  yellow_cards_away: number | null;
+  red_cards_home: number | null;
+  red_cards_away: number | null;
 };
 
 export type StrategyEvaluation = {

@@ -56,6 +56,10 @@ def normalize_snapshot(
         shots_away=_number(away_stats.get("Total Shots")),
         shots_on_target_home=_number(home_stats.get("Shots on Goal")),
         shots_on_target_away=_number(away_stats.get("Shots on Goal")),
+        shots_off_target_home=_number(home_stats.get("Shots off Goal")),
+        shots_off_target_away=_number(away_stats.get("Shots off Goal")),
+        attacks_home=_number(home_stats.get("Attacks")),
+        attacks_away=_number(away_stats.get("Attacks")),
         dangerous_attacks_home=_number(home_stats.get("Dangerous Attacks")),
         dangerous_attacks_away=_number(away_stats.get("Dangerous Attacks")),
         corners_home=_number(home_stats.get("Corner Kicks")),
@@ -66,6 +70,8 @@ def normalize_snapshot(
         xg_away=_number(away_stats.get("expected_goals")),
         red_cards_home=_number(home_stats.get("Red Cards")),
         red_cards_away=_number(away_stats.get("Red Cards")),
+        yellow_cards_home=_number(home_stats.get("Yellow Cards")),
+        yellow_cards_away=_number(away_stats.get("Yellow Cards")),
         raw_metadata={"league": fixture.get("league"), "team_names": teams},
     )
 

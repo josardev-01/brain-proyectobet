@@ -23,6 +23,10 @@ class MatchSnapshot:
     shots_away: int | None = None
     shots_on_target_home: int | None = None
     shots_on_target_away: int | None = None
+    shots_off_target_home: int | None = None
+    shots_off_target_away: int | None = None
+    attacks_home: int | None = None
+    attacks_away: int | None = None
     dangerous_attacks_home: int | None = None
     dangerous_attacks_away: int | None = None
     corners_home: int | None = None
@@ -33,6 +37,8 @@ class MatchSnapshot:
     xg_away: float | None = None
     red_cards_home: int | None = None
     red_cards_away: int | None = None
+    yellow_cards_home: int | None = None
+    yellow_cards_away: int | None = None
     raw_metadata: Mapping[str, Any] | None = None
 
 

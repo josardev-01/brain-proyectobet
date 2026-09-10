@@ -4,6 +4,7 @@ COPY pyproject.toml README.md ./
 COPY src ./src
 COPY migrations ./migrations
 COPY scripts ./scripts
+COPY config ./config
 COPY alembic.ini ./
 RUN python -m pip install --no-cache-dir --upgrade "pip>=26.2" \
     && pip install --no-cache-dir .

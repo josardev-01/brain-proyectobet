@@ -46,6 +46,7 @@ from brain_projectbet.core.security import (
     verify_password,
 )
 from brain_projectbet.core.settings import get_settings
+from brain_projectbet.rules.catalog import STRATEGY_CATALOG
 from brain_projectbet.rules.expression import InvalidExpression, evaluate_expression
 from brain_projectbet.rules.runtime import evaluate_strategy_config
 
@@ -297,7 +298,15 @@ def list_match_evaluations(provider: str, fixture_id: str, session: Session = De
     for strategy in strategies:
         try:
             result = evaluate_strategy_config(
-                strategy.config, snapshots, favorite_side=match.favorite_side
+                strategy.config,
+                snapshots,
+                favorite_side=match.favorite_side,
+                context={
+                    "favorite_odds": match.favorite_odds,
+                    "favorite_probability": match.favorite_probability,
+                    "league_name": match.league_name,
+                    "country": match.country,
+                },
             )
         except InvalidExpression as error:
             evaluations.append(StrategyRuntimeView(
@@ -327,6 +336,11 @@ def list_strategies(session: Session = Depends(get_db)):
     return list(session.scalars(select(StrategyRecord).order_by(
         StrategyRecord.strategy_key, StrategyRecord.version.desc()
     )))
+
+
+@router.get("/strategy-catalog")
+def strategy_catalog():
+    return STRATEGY_CATALOG
 
 
 @router.post("/strategies", response_model=StrategyView, status_code=status.HTTP_201_CREATED)

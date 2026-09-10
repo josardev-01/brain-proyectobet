@@ -52,6 +52,7 @@ $env:PYTHONPATH = "src"
 python scripts/discover_candidates.py --date AAAA-MM-DD
 python scripts/reconcile_live_providers.py --registry data/raw/eligible/AAAA-MM-DD.json
 python scripts/reconcile_live_providers.py --registry data/raw/eligible/AAAA-MM-DD.json --write-snapshots
+python scripts/monitor_hybrid_candidates.py --registry data/raw/eligible/AAAA-MM-DD.json --cycles 1
 python scripts/monitor_candidates.py --cycles 1
 python scripts/run_matchday.py --registry data/raw/eligible/AAAA-MM-DD.json --dry-run
 python scripts/finalize_matches.py --registry data/raw/eligible/AAAA-MM-DD.json
@@ -71,6 +72,13 @@ la escritura explícita conserva el ID canónico de API-Football y registra el
 proveedor e ID de origen dentro de la metadata.
 
 `run_matchday.py` es el ejecutor persistente y reiniciable. Empieza a consultar en el minuto 35 para llegar con línea base al minuto 45, agrupa partidos solapados en una sola ventana, consulta cada diez minutos y finaliza la jornada tres horas después del último comienzo. Diez minutos conserva el intervalo temporal exacto que evalúa la heurística y deja margen suficiente en la cuota actual; puede ajustarse con `--interval-seconds`. `--dry-run` permite revisar el horario sin consumir cuota y `--once` ejecuta solo la acción que corresponde al momento actual, útil para un programador externo.
+
+Por defecto `run_matchday.py` usa APIFootball.com para el reloj y las
+estadísticas live, sin consumir API-Football en cada ciclo. `--live-provider
+api-football` conserva el monitor anterior como respaldo. Docker incluye el
+servicio `monitor`: crea el registro diario si falta, observa cada 120 segundos
+dentro de las ventanas, sincroniza PostgreSQL y ejecuta la finalización para
+alimentar backtesting. El `notifier` entrega a Telegram las alertas persistidas.
 
 La definición activa está en [`config/strategies/favorite_losing_pressure_v2.json`](config/strategies/favorite_losing_pressure_v2.json). Los comandos aceptan `--strategy` para ejecutar otra versión sin modificar el motor.
 
@@ -105,5 +113,11 @@ $env:PYTHONPATH = "src"
 ```
 
 Con Docker instalado, `docker compose up --build` inicia PostgreSQL, API y web. SQLite (`data/projectbet.db`) es únicamente el valor predeterminado local.
+
+El constructor de estrategias para usuarios registrados se encuentra en
+**Estrategias**. Permite objetivo, horizonte, alcance por liga/país, ventanas de
+5/10/15 minutos, condiciones múltiples y contenido de la alerta. Consulta
+[`docs/STRATEGY_BUILDER.md`](docs/STRATEGY_BUILDER.md) para el contrato y sus
+límites actuales.
 
 Cada push y pull request ejecuta en GitHub Actions las pruebas del backend, verifica las migraciones, comprueba TypeScript y compila el frontend. `/health` confirma que el proceso API responde y `/ready` comprueba además la conexión con la base de datos.

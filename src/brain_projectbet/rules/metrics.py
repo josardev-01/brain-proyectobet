@@ -37,12 +37,20 @@ def build_rule_metrics(
         "opponent_shots": getattr(snapshot, f"shots_{opponent_side}"),
         "favorite_shots_on_target": getattr(snapshot, f"shots_on_target_{favorite_side}"),
         "opponent_shots_on_target": getattr(snapshot, f"shots_on_target_{opponent_side}"),
+        "favorite_shots_off_target": getattr(snapshot, f"shots_off_target_{favorite_side}"),
+        "opponent_shots_off_target": getattr(snapshot, f"shots_off_target_{opponent_side}"),
+        "favorite_attacks": getattr(snapshot, f"attacks_{favorite_side}"),
+        "opponent_attacks": getattr(snapshot, f"attacks_{opponent_side}"),
+        "favorite_dangerous_attacks": getattr(snapshot, f"dangerous_attacks_{favorite_side}"),
+        "opponent_dangerous_attacks": getattr(snapshot, f"dangerous_attacks_{opponent_side}"),
         "favorite_corners": getattr(snapshot, f"corners_{favorite_side}"),
         "opponent_corners": getattr(snapshot, f"corners_{opponent_side}"),
         "favorite_possession": getattr(snapshot, f"possession_{favorite_side}"),
         "opponent_possession": getattr(snapshot, f"possession_{opponent_side}"),
         "favorite_red_cards": getattr(snapshot, f"red_cards_{favorite_side}"),
         "opponent_red_cards": getattr(snapshot, f"red_cards_{opponent_side}"),
+        "favorite_yellow_cards": getattr(snapshot, f"yellow_cards_{favorite_side}"),
+        "opponent_yellow_cards": getattr(snapshot, f"yellow_cards_{opponent_side}"),
     }
     if window is None:
         metrics["window_complete"] = False
@@ -50,7 +58,8 @@ def build_rule_metrics(
     suffix = f"last_{window.requested_window_minutes}"
     metrics["window_complete"] = window.actual_window_minutes == window.requested_window_minutes
     for metric in (
-        "shots", "shots_on_target", "dangerous_attacks", "corners", "xg"
+        "shots", "shots_on_target", "shots_off_target", "attacks",
+        "dangerous_attacks", "corners", "xg"
     ):
         metrics[f"favorite_{metric}_{suffix}"] = window.deltas.get(f"{metric}_{favorite_side}")
         metrics[f"opponent_{metric}_{suffix}"] = window.deltas.get(f"{metric}_{opponent_side}")

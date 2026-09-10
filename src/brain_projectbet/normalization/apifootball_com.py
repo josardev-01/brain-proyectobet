@@ -39,7 +39,8 @@ def _clock(value: Any) -> tuple[int | None, int | None, str]:
         minute = int(match.group(1))
         extra = int(match.group(2)) if match.group(2) else None
         return minute, extra, "1H" if minute < 45 else "2H"
-    return None, None, _STATUS_MAP.get(raw.casefold(), "UNKNOWN")
+    status = _STATUS_MAP.get(raw.casefold(), "UNKNOWN")
+    return (45, None, status) if status == "HT" else (None, None, status)
 
 
 def _statistics(items: Sequence[Mapping[str, Any]]) -> dict[str, tuple[Any, Any]]:
@@ -47,6 +48,18 @@ def _statistics(items: Sequence[Mapping[str, Any]]) -> dict[str, tuple[Any, Any]
         str(item.get("type", "")).casefold(): (item.get("home"), item.get("away"))
         for item in items
     }
+
+
+def _card_counts(items: Sequence[Mapping[str, Any]], color: str) -> tuple[int, int]:
+    home = away = 0
+    for item in items:
+        if color not in str(item.get("card", "")).casefold():
+            continue
+        if item.get("home_fault") or item.get("home_player_id"):
+            home += 1
+        elif item.get("away_fault") or item.get("away_player_id"):
+            away += 1
+    return home, away
 
 
 def normalize_snapshot(
@@ -58,6 +71,8 @@ def normalize_snapshot(
 ) -> MatchSnapshot:
     """Normaliza un evento de APIFootball, conservando el ID de origen en metadata."""
     stats = _statistics(fixture.get("statistics", []))
+    yellow_cards = _card_counts(fixture.get("cards", []), "yellow")
+    red_cards = _card_counts(fixture.get("cards", []), "red")
     minute, minute_extra, status = _clock(fixture.get("match_status"))
     on_target = stats.get("on target", (None, None))
     off_target = stats.get("off target", (None, None))
@@ -86,12 +101,20 @@ def normalize_snapshot(
         shots_away=shots_away,
         shots_on_target_home=_number(on_target[0]),
         shots_on_target_away=_number(on_target[1]),
+        shots_off_target_home=_number(off_target[0]),
+        shots_off_target_away=_number(off_target[1]),
+        attacks_home=_number(stats.get("attacks", (None, None))[0]),
+        attacks_away=_number(stats.get("attacks", (None, None))[1]),
         dangerous_attacks_home=_number(stats.get("dangerous attacks", (None, None))[0]),
         dangerous_attacks_away=_number(stats.get("dangerous attacks", (None, None))[1]),
         corners_home=_number(stats.get("corners", (None, None))[0]),
         corners_away=_number(stats.get("corners", (None, None))[1]),
         possession_home=_number(stats.get("ball possession", (None, None))[0]),
         possession_away=_number(stats.get("ball possession", (None, None))[1]),
+        yellow_cards_home=yellow_cards[0],
+        yellow_cards_away=yellow_cards[1],
+        red_cards_home=red_cards[0],
+        red_cards_away=red_cards[1],
         raw_metadata={
             "source_provider": "apifootball-com",
             "source_match_id": source_match_id,

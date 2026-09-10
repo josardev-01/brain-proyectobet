@@ -1,6 +1,6 @@
 # CEREBRO DEL PROYECTO — Estadísticas de Fútbol
 
-**Versión:** 0.3
+**Versión:** 0.4
 **Estado:** Base operativa inicial  
 **Stack base:** Python + FastAPI + PostgreSQL + frontend Node.js  
 **Canal inicial de alertas:** Telegram
@@ -1211,7 +1211,7 @@ No construir todavía scraping como dependencia principal hasta demostrar que un
 
 # Estado actual
 
-**CEREBRO v0.3**
+**CEREBRO v0.4**
 
 Primer objetivo definido:
 
@@ -1226,7 +1226,16 @@ Backend: Python + FastAPI
 Database: PostgreSQL
 Frontend: Next.js + TypeScript
 Notifications: Telegram
-Data Provider: pendiente de spike comparativo
+Odds y cierre: API-Football
+Reloj y estadísticas live: APIFootball.com
+Respaldo experimental: GOAL API
 ```
+
+El MVP dispone de reconciliación conservadora entre proveedores, worker de
+jornada, persistencia temporal, evaluación y entrega desacoplada a Telegram.
+Los usuarios aprobados pueden crear estrategias declarativas versionadas desde
+un catálogo seguro. La ejecución automática inicial sigue centrada en
+`favorite_losing_pressure`; objetivos adicionales necesitan etiquetadores y
+backtesting propios antes de considerarse operativos.
 
 Este archivo deberá evolucionar junto con el proyecto sin convertir decisiones experimentales en reglas permanentes antes de validarlas.

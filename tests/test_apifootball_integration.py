@@ -54,12 +54,12 @@ class ApiFootballComNormalizationTests(unittest.TestCase):
         self.assertEqual(snapshot.possession_home, 63)
         self.assertEqual(snapshot.raw_metadata["source_match_id"], "900")
 
-    def test_maps_half_time_without_inventing_a_minute(self) -> None:
+    def test_maps_half_time_to_observable_minute_45(self) -> None:
         item = live()
         item["match_status"] = "Half Time"
         snapshot = normalize_snapshot(item, captured_at=datetime.now(UTC))
         self.assertEqual(snapshot.status, "HT")
-        self.assertIsNone(snapshot.minute)
+        self.assertEqual(snapshot.minute, 45)
 
 
 class ProviderReconciliationTests(unittest.TestCase):

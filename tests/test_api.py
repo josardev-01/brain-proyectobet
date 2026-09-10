@@ -106,7 +106,10 @@ class ApiTests(unittest.TestCase):
             "objective_type": "corner",
             "objective_subject": "home",
             "horizon_minutes": 10,
-            "config": {"strategy_id": "corner_pressure", "version": 1},
+            "config": {
+                "strategy_id": "corner_pressure", "version": 1,
+                "conditions": [{"metric": "minute", "operator": ">=", "value": 45}],
+            },
         }
         headers = self.auth_headers()
         self.assertEqual(self.client.post("/api/v1/strategies", json=payload, headers=headers).status_code, 201)
@@ -131,6 +134,13 @@ class ApiTests(unittest.TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()["matched"])
+
+    def test_exposes_strategy_builder_catalog(self) -> None:
+        response = self.client.get("/api/v1/strategy-catalog")
+        self.assertEqual(response.status_code, 200)
+        values = {item["value"] for item in response.json()["metrics"]}
+        self.assertIn("favorite_is_losing", values)
+        self.assertIn("favorite_dangerous_attacks_last_{window}", values)
 
     def test_register_login_and_current_user(self) -> None:
         headers = self.auth_headers()

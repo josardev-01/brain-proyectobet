@@ -233,3 +233,37 @@ por separado el proveedor de odds o el de datos live.
 `source_provider` y `source_match_id` en metadata. El siguiente paso es medir
 coincidencias reales simultáneas y añadir una tabla persistente de aliases si
 los nombres varían de manera recurrente.
+
+## DEC-025 — Monitor híbrido continuo
+
+**Problema:** Consultar API-Football en cada ciclo consume la cuota limitada,
+mientras APIFootball.com ya aporta reloj y estadísticas live.
+
+**Decisión:** API-Football descubre candidatos y los finaliza; APIFootball.com
+captura snapshots desde el minuto 35 cada 120 segundos. El worker reconcilia
+identidades, evalúa la heurística desde el minuto 45, sincroniza PostgreSQL y
+deja la alerta para el notificador Telegram.
+
+**Motivo:** Concentra la cuota limitada en odds y resultados, y usa el feed live
+para construir las ventanas temporales necesarias.
+
+**Impacto:** Docker mantiene un servicio de monitoreo reiniciable con volumen de
+datos. Una falta o ambigüedad de identidad omite el partido y queda reportada;
+no se mezclan estadísticas por aproximación insegura.
+
+## DEC-026 — Constructor de filtros como estrategia versionada
+
+**Problema:** Un único formulario con una condición no permite que cada usuario
+adapte el análisis a su objetivo.
+
+**Decisión:** Dividir el constructor en objetivo, alcance, condiciones y
+contenido de alerta. Las métricas provienen de un catálogo del servidor, las
+expresiones se validan sin `eval`, las ausencias fallan de forma cerrada y cada
+creación nace inactiva como `HEURÍSTICA`.
+
+**Motivo:** Conserva la flexibilidad observada en productos de filtros de fútbol
+sin ocultar la diferencia entre filtro intuitivo y estrategia validada.
+
+**Impacto:** Los usuarios pueden crear versiones con ligas, países, ventanas y
+condiciones AND/OR. Los grupos anidados, clonación y etiquetadores de corners o
+tarjetas quedan como incrementos explícitos, no como soporte simulado.
