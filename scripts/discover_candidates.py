@@ -42,18 +42,31 @@ def main() -> int:
     payloads = []
     daily_remaining = None
     total_pages = 1
+    stopped_reason = None
     for page in range(1, args.max_pages + 1):
         response = probe.prematch_odds_by_date(args.date, page=page)
-        payloads.append(response.payload)
         limits = response.rate_limits()
         if limits.daily_remaining is not None:
             daily_remaining = limits.daily_remaining
-        reported_pages = int(response.payload.get("paging", {}).get("total", 1))
+        if response.payload.get("errors"):
+            stopped_reason = "provider_rejected_page"
+            break
+        paging = response.payload.get("paging", {})
+        reported_page = int(paging.get("current", page))
+        if reported_page != page:
+            stopped_reason = "provider_page_mismatch"
+            break
+        payloads.append(response.payload)
+        reported_pages = int(paging.get("total", 1))
         total_pages = max(total_pages, reported_pages)
         if daily_remaining is not None and daily_remaining <= args.daily_reserve:
+            stopped_reason = "daily_reserve_reached"
             break
         if page >= total_pages:
+            stopped_reason = "all_pages_read"
             break
+    if stopped_reason is None and len(payloads) == args.max_pages and args.max_pages < total_pages:
+        stopped_reason = "max_pages_reached"
 
     discovered_at = datetime.now(UTC)
     result = discover_eligible_fixtures(
@@ -78,6 +91,7 @@ def main() -> int:
         "strategy_version": strategy.version,
         "pages_read": len(payloads),
         "total_pages_reported": total_pages,
+        "stopped_reason": stopped_reason,
         "fixtures_evaluated": result.fixtures_evaluated,
         "eligible_count": len(eligible),
         "team_identities_enriched": identities_enriched,

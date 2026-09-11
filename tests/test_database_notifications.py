@@ -60,9 +60,11 @@ class DatabaseNotificationTests(unittest.TestCase):
                 second = deliver_pending_alerts(
                     session, telegram_token="secret", notifier_factory=factory
                 )
+                stored_alert = session.get(AlertRecord, "alert-1")
             self.assertEqual(first["sent"], 1)
             self.assertEqual(second["sent"], 0)
             self.assertEqual(sent, ["alert-1"])
+            self.assertEqual(stored_alert.delivery_status, "SENT")
             engine.dispose()
 
     def test_owned_alert_is_only_delivered_to_its_owner(self) -> None:
@@ -104,8 +106,10 @@ class DatabaseNotificationTests(unittest.TestCase):
                 result = deliver_pending_alerts(
                     session, telegram_token="secret", notifier_factory=factory
                 )
+                stored_alert = session.get(AlertRecord, "private-alert")
             self.assertEqual(result["sent"], 1)
             self.assertEqual(destinations, ["111"])
+            self.assertEqual(stored_alert.delivery_status, "SENT")
             engine.dispose()
 
 

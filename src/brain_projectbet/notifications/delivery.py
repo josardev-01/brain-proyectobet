@@ -33,6 +33,31 @@ def alert_event_from_record(record: AlertRecord) -> AlertEvent:
     return AlertEvent(**payload)
 
 
+def _refresh_alert_delivery_status(
+    session: Session,
+    alert: AlertRecord,
+    endpoints: list[NotificationEndpointRecord],
+) -> None:
+    """Keep the alert summary consistent with its per-endpoint receipts."""
+    if not endpoints:
+        alert.delivery_status = "NO_ENDPOINT"
+        session.commit()
+        return
+
+    endpoint_ids = [endpoint.id for endpoint in endpoints]
+    statuses = list(session.scalars(select(NotificationDeliveryRecord.status).where(
+        NotificationDeliveryRecord.alert_id == alert.alert_id,
+        NotificationDeliveryRecord.endpoint_id.in_(endpoint_ids),
+    )))
+    if len(statuses) == len(endpoint_ids) and all(status == "SENT" for status in statuses):
+        alert.delivery_status = "SENT"
+    elif any(status == "FAILED" for status in statuses):
+        alert.delivery_status = "FAILED"
+    else:
+        alert.delivery_status = "PENDING"
+    session.commit()
+
+
 def deliver_pending_alerts(
     session: Session,
     *,
@@ -63,6 +88,7 @@ def deliver_pending_alerts(
                 skipped += 1
                 continue
             if attempted >= maximum:
+                _refresh_alert_delivery_status(session, alert, eligible_endpoints)
                 return {"attempted": attempted, "sent": sent, "failed": failed, "skipped": skipped}
             now = datetime.now(UTC)
             if delivery is None:
@@ -91,4 +117,5 @@ def deliver_pending_alerts(
                 delivery.sent_at = now
                 sent += 1
             session.commit()
+        _refresh_alert_delivery_status(session, alert, eligible_endpoints)
     return {"attempted": attempted, "sent": sent, "failed": failed, "skipped": skipped}
