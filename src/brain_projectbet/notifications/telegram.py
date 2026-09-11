@@ -45,11 +45,18 @@ def format_telegram_alert(alert: AlertEvent) -> str:
 
 
 def _display(value: object) -> str:
-    if value is None:
-        return "N/D"
     if isinstance(value, float):
         return f"{value:.2f}"
     return str(value)
+
+
+def _pair_line(label: str, metrics: Mapping[str, object], metric: str) -> str | None:
+    values = [
+        ("local", metrics.get(f"{metric}_home")),
+        ("visitante", metrics.get(f"{metric}_away")),
+    ]
+    available = [f"{side} {_display(value)}" for side, value in values if value is not None]
+    return f"{label}: {' · '.join(available)}" if available else None
 
 
 def _format_user_strategy_alert(alert: AlertEvent) -> str:
@@ -60,17 +67,24 @@ def _format_user_strategy_alert(alert: AlertEvent) -> str:
         "⚽ ESTRATEGIA ACTIVADA",
         "",
         alert.strategy_name,
-        f"{alert.home_team_name} vs {alert.away_team_name}",
+        (
+            f"{alert.home_team_name} vs {alert.away_team_name}"
+            if alert.home_team_name and alert.away_team_name
+            else f"Partido {alert.fixture_id}"
+        ),
         f"Minuto: {minute}'",
     ]
-    if "score" in selected:
+    if "score" in selected and alert.score_home is not None and alert.score_away is not None:
         lines.append(f"Marcador: {_display(alert.score_home)}-{_display(alert.score_away)}")
     if "prematch_odds" in selected:
-        lines.extend([
-            "",
-            "Cuotas pre-partido:",
-            f"Local {_display(metrics.get('home_odds'))} · Empate {_display(metrics.get('draw_odds'))} · Visitante {_display(metrics.get('away_odds'))}",
-        ])
+        odds = [
+            f"Local {_display(metrics['home_odds'])}" if metrics.get("home_odds") is not None else None,
+            f"Empate {_display(metrics['draw_odds'])}" if metrics.get("draw_odds") is not None else None,
+            f"Visitante {_display(metrics['away_odds'])}" if metrics.get("away_odds") is not None else None,
+        ]
+        available_odds = [value for value in odds if value is not None]
+        if available_odds:
+            lines.extend(["", "Cuotas pre-partido:", " · ".join(available_odds)])
     stat_fields = (
         ("shots", "Tiros", "shots"),
         ("shots_on_target", "Tiros a puerta", "shots_on_target"),
@@ -82,17 +96,17 @@ def _format_user_strategy_alert(alert: AlertEvent) -> str:
     visible_stats = []
     for field_name, label, metric in stat_fields:
         if field_name in selected:
-            visible_stats.append(
-                f"{label}: local {_display(metrics.get(f'{metric}_home'))} · visitante {_display(metrics.get(f'{metric}_away'))}"
-            )
+            line = _pair_line(label, metrics, metric)
+            if line is not None:
+                visible_stats.append(line)
     if "cards" in selected:
-        visible_stats.extend([
-            f"Amarillas: local {_display(metrics.get('yellow_cards_home'))} · visitante {_display(metrics.get('yellow_cards_away'))}",
-            f"Rojas: local {_display(metrics.get('red_cards_home'))} · visitante {_display(metrics.get('red_cards_away'))}",
-        ])
+        for label, metric in (("Amarillas", "yellow_cards"), ("Rojas", "red_cards")):
+            line = _pair_line(label, metrics, metric)
+            if line is not None:
+                visible_stats.append(line)
     if visible_stats:
         lines.extend(["", "Estadísticas al activarse:", *visible_stats])
-    if alert.reasons:
+    if "conditions" in selected and alert.reasons:
         lines.extend(["", "Condiciones evaluadas:", *[f"• {reason}" for reason in alert.reasons[:8]]])
     lines.extend(["", f"Estrategia: {alert.rule_id} v{alert.rule_version} ({alert.rule_status})"])
     return "\n".join(lines)

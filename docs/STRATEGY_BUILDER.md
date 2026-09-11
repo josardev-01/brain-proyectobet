@@ -40,13 +40,23 @@ Cada estrategia pertenece al usuario que la crea. Si está activa, se evalúa de
 cada sincronización live y su alerta solo se entrega a los destinos Telegram de ese
 propietario.
 
+El contenido opcional del mensaje se controla con `alert_fields`. Telegram muestra
+únicamente los bloques seleccionados; dentro de ellos omite las estadísticas que el
+proveedor no haya entregado, en lugar de completar el mensaje con `N/D`. La cabecera
+con estrategia, partido y minuto se conserva siempre para identificar la señal. Las
+condiciones evaluadas son un campo seleccionable independiente.
+
 El alcance admite ligas incluidas, ligas excluidas y países. Las condiciones
 admiten `AND`, `OR`, `>`, `>=`, `=`, `!=`, `<`, `<=` y `BETWEEN`.
 
+El constructor visual admite grupos anidados `AND`, `OR` y `NOT`. Desde una
+tarjeta existente, **Usar como base** carga su alcance, condiciones, objetivo y
+contenido de alerta, propone el siguiente número de versión y conserva intacta
+la versión anterior.
+
 ## Evolución recomendada
 
-El siguiente incremento del constructor debe añadir grupos anidados visuales,
-duplicar una estrategia como nueva versión, probarla sobre un partido elegido y
-mostrar una estimación de cobertura antes de activarla. Los objetivos corner y
+El siguiente incremento del constructor debe permitir probar una estrategia sobre
+un partido elegido y mostrar una estimación de cobertura antes de activarla. Los objetivos corner y
 tarjeta se pueden definir desde ahora, pero requieren etiquetadores específicos
 antes de presentar backtesting o probabilidades como disponibles.

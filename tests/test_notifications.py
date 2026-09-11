@@ -71,7 +71,27 @@ class NotificationTests(unittest.TestCase):
         message = format_telegram_alert(custom)
         self.assertIn("Presión del local", message)
         self.assertIn("Tiros a puerta: local 4 · visitante 1", message)
+        self.assertNotIn("Condiciones evaluadas", message)
         self.assertNotIn("FAVORITO BAJO PRESIÓN", message)
+
+    def test_user_strategy_omits_unavailable_and_unselected_fields(self) -> None:
+        custom = AlertEvent(
+            alert_id="custom-missing", candidate_id="custom", fixture_id="11",
+            favorite_team_id="", rule_id="home_pressure", rule_version=1,
+            created_at=datetime.now(UTC), minute=70, minute_extra=None,
+            score_favorite=0, score_opponent=1, strategy_name="Presión local",
+            home_team_name="Local FC", away_team_name="Visitante FC",
+            score_home=0, score_away=1,
+            alert_fields=("prematch_odds", "shots_on_target", "conditions"),
+            metrics={"home_odds": 1.45, "shots_on_target_home": 3, "corners_home": 8},
+            reasons=("shots_on_target_home >= 3: 3",),
+        )
+        message = format_telegram_alert(custom)
+        self.assertIn("Local 1.45", message)
+        self.assertIn("Tiros a puerta: local 3", message)
+        self.assertIn("Condiciones evaluadas", message)
+        self.assertNotIn("Corners", message)
+        self.assertNotIn("N/D", message)
 
     def test_receipt_prevents_duplicate_delivery(self) -> None:
         identifier = delivery_id("alert-1", "telegram", "123")

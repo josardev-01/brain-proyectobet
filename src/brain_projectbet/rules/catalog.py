@@ -55,5 +55,6 @@ STRATEGY_CATALOG = {
         {"value": "corners", "label": "Corners"},
         {"value": "possession", "label": "Posesión"},
         {"value": "cards", "label": "Tarjetas"},
+        {"value": "conditions", "label": "Condiciones que activaron la estrategia"},
     ],
 }
