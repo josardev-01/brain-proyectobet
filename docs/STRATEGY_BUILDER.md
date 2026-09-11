@@ -46,8 +46,11 @@ proveedor no haya entregado, en lugar de completar el mensaje con `N/D`. La cabe
 con estrategia, partido y minuto se conserva siempre para identificar la señal. Las
 condiciones evaluadas son un campo seleccionable independiente.
 
-El alcance admite ligas incluidas, ligas excluidas y países. Las condiciones
-admiten `AND`, `OR`, `>`, `>=`, `=`, `!=`, `<`, `<=` y `BETWEEN`.
+El alcance admite ligas incluidas, ligas excluidas y países incluidos. Los tres
+campos se presentan como desplegables con búsqueda y selección múltiple, alimentados
+por las competiciones ya registradas. Una liga no puede quedar incluida y excluida
+a la vez. Las condiciones admiten `AND`, `OR`, `>`, `>=`, `=`, `!=`, `<`, `<=` y
+`BETWEEN`.
 
 El constructor visual admite grupos anidados `AND`, `OR` y `NOT`. Desde una
 tarjeta existente, **Usar como base** carga su alcance, condiciones, objetivo y

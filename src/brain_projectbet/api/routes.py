@@ -365,8 +365,20 @@ def list_strategies(
 
 
 @router.get("/strategy-catalog")
-def strategy_catalog():
-    return STRATEGY_CATALOG
+def strategy_catalog(session: Session = Depends(get_db)):
+    leagues = list(session.scalars(
+        select(MatchRecord.league_name)
+        .where(MatchRecord.league_name != "", MatchRecord.provider != "validation")
+        .distinct()
+        .order_by(MatchRecord.league_name)
+    ))
+    countries = list(session.scalars(
+        select(MatchRecord.country)
+        .where(MatchRecord.country != "", MatchRecord.provider != "validation")
+        .distinct()
+        .order_by(MatchRecord.country)
+    ))
+    return {**STRATEGY_CATALOG, "leagues": leagues, "countries": countries}
 
 
 @router.post("/strategies", response_model=StrategyView, status_code=status.HTTP_201_CREATED)

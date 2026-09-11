@@ -10,7 +10,7 @@ export default async function StrategiesPage({ searchParams }: { searchParams: P
   const copyId = Number((await searchParams).copy);
   const [{ data, online }, { data: catalog }] = await Promise.all([
     apiGet<Strategy[]>("/strategies", [], cookie),
-    apiGet<StrategyCatalog>("/strategy-catalog", { objectives: [], subjects: [], operators: [], windows: [10], metrics: [], alert_fields: [] }),
+    apiGet<StrategyCatalog>("/strategy-catalog", { objectives: [], subjects: [], operators: [], windows: [10], metrics: [], alert_fields: [], leagues: [], countries: [] }),
   ]);
   const template = Number.isInteger(copyId) ? data.find(item => item.id === copyId) : undefined;
   const nextVersion = template

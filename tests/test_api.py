@@ -152,6 +152,21 @@ class ApiTests(unittest.TestCase):
         self.assertTrue(response.json()["matched"])
 
     def test_exposes_strategy_builder_catalog(self) -> None:
+        with self.sessions.begin() as session:
+            session.add_all([
+                MatchRecord(
+                    provider="test", provider_match_id="catalog-1", kickoff_at=datetime.now(UTC),
+                    league_id="1", league_name="Liga Test", country="Paraguay",
+                    favorite_side="home", favorite_odds=1.4, favorite_probability=0.68,
+                    bookmaker_count=3, discovered_at=datetime.now(UTC), updated_at=datetime.now(UTC),
+                ),
+                MatchRecord(
+                    provider="test", provider_match_id="catalog-2", kickoff_at=datetime.now(UTC),
+                    league_id="2", league_name="Otra Liga", country="Paraguay",
+                    favorite_side="away", favorite_odds=1.5, favorite_probability=0.62,
+                    bookmaker_count=2, discovered_at=datetime.now(UTC), updated_at=datetime.now(UTC),
+                ),
+            ])
         response = self.client.get("/api/v1/strategy-catalog")
         self.assertEqual(response.status_code, 200)
         values = {item["value"] for item in response.json()["metrics"]}
@@ -159,6 +174,8 @@ class ApiTests(unittest.TestCase):
         self.assertIn("shots_on_target_home", values)
         metric = next(item for item in response.json()["metrics"] if item["value"] == "shots_on_target_home")
         self.assertTrue(metric["supports_window"])
+        self.assertEqual(response.json()["leagues"], ["Liga Test", "Otra Liga"])
+        self.assertEqual(response.json()["countries"], ["Paraguay"])
 
     def test_strategy_list_is_private_to_owner(self) -> None:
         headers = self.auth_headers()

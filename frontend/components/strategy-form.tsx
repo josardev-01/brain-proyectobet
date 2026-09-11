@@ -3,6 +3,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Strategy, StrategyCatalog, StrategyMetric } from "@/lib/api";
+import { MultiSelect } from "@/components/multi-select";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 type Logical = "AND" | "OR" | "NOT";
@@ -19,10 +20,6 @@ function record(value: unknown): JsonRecord {
 
 function list(value: unknown): string[] {
   return Array.isArray(value) ? value.filter(item => typeof item === "string") : [];
-}
-
-function splitList(value: FormDataEntryValue | null) {
-  return String(value ?? "").split(",").map(item => item.trim()).filter(Boolean).slice(0, 100);
 }
 
 function typedValue(raw: string, metric?: StrategyMetric) {
@@ -98,6 +95,9 @@ export function StrategyForm({ catalog, template, nextVersion }: { catalog: Stra
   const [pending, setPending] = useState(false);
   const [windowMinutes, setWindowMinutes] = useState(catalog.windows.includes(configuredWindow) ? configuredWindow : 10);
   const [expression, setExpression] = useState<GroupDraft>(() => initialExpression(template));
+  const [leaguesIncluded, setLeaguesIncluded] = useState(() => list(templateScope.leagues_included));
+  const [leaguesExcluded, setLeaguesExcluded] = useState(() => list(templateScope.leagues_excluded));
+  const [countriesIncluded, setCountriesIncluded] = useState(() => list(templateScope.countries_included));
   const [alertFields, setAlertFields] = useState(() => {
     const configured = list(templateConfig.alert_fields);
     return configured.length ? configured : defaultAlertFields;
@@ -178,9 +178,9 @@ export function StrategyForm({ catalog, template, nextVersion }: { catalog: Stra
           strategy_id: strategyKey, version, status: "HEURÍSTICA", feature_window_minutes: windowMinutes,
           objective: { target: { event_type: objectiveType, subject: objectiveSubject, horizon_minutes: horizonMinutes } },
           scope: {
-            leagues_included: splitList(data.get("leagues_included")),
-            leagues_excluded: splitList(data.get("leagues_excluded")),
-            countries_included: splitList(data.get("countries_included")),
+            leagues_included: leaguesIncluded,
+            leagues_excluded: leaguesExcluded,
+            countries_included: countriesIncluded,
           },
           conditions: serializeNode(expression, windowMinutes, metricByValue),
           alert_fields: alertFields,
@@ -210,9 +210,9 @@ export function StrategyForm({ catalog, template, nextVersion }: { catalog: Stra
       <label>Horizonte objetivo<input name="horizon_minutes" type="number" min="1" max="120" defaultValue={template?.horizon_minutes ?? 10} required /></label>
     </div></fieldset>
     <fieldset><legend>2. Alcance de partidos</legend><div className="form-grid">
-      <label className="wide">Ligas incluidas<input name="leagues_included" defaultValue={list(templateScope.leagues_included).join(", ")} placeholder="Premier League, Serie A (vacío = todas)" /></label>
-      <label className="wide">Ligas excluidas<input name="leagues_excluded" defaultValue={list(templateScope.leagues_excluded).join(", ")} placeholder="Friendly, Youth League" /></label>
-      <label>Países incluidos<input name="countries_included" defaultValue={list(templateScope.countries_included).join(", ")} placeholder="England, Brazil" /></label>
+      <MultiSelect label="Ligas incluidas" options={catalog.leagues.filter(value => !leaguesExcluded.includes(value))} selected={leaguesIncluded} onChange={values => { setLeaguesIncluded(values); setLeaguesExcluded(current => current.filter(value => !values.includes(value))); }} placeholder="Todas las ligas" />
+      <MultiSelect label="Ligas excluidas" options={catalog.leagues.filter(value => !leaguesIncluded.includes(value))} selected={leaguesExcluded} onChange={values => { setLeaguesExcluded(values); setLeaguesIncluded(current => current.filter(value => !values.includes(value))); }} placeholder="Ninguna liga" />
+      <MultiSelect label="Países incluidos" options={catalog.countries} selected={countriesIncluded} onChange={setCountriesIncluded} placeholder="Todos los países" />
       <label>Ventana reciente<select value={windowMinutes} onChange={event => setWindowMinutes(Number(event.target.value))}>{catalog.windows.map(value => <option key={value} value={value}>{value} minutos</option>)}</select></label>
     </div></fieldset>
     <fieldset><legend>3. Condiciones y grupos</legend><p className="builder-intro">Agrupa condiciones para representar casos como “local favorito” O “visitante favorito”, conservando todas las condiciones dentro de cada rama.</p>{renderNode(expression, 0, 0)}</fieldset>

@@ -50,6 +50,8 @@ export type StrategyCatalog = {
   windows: number[];
   metrics: StrategyMetric[];
   alert_fields: { value: string; label: string }[];
+  leagues: string[];
+  countries: string[];
 };
 
 export type Snapshot = {
