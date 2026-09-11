@@ -17,10 +17,12 @@ def _default(value: Any):
 
 def save_eligible_fixtures(path: Path, fixtures: tuple[EligibleFixture, ...]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
+    temporary = path.with_suffix(f"{path.suffix}.tmp")
+    temporary.write_text(
         json.dumps([asdict(fixture) for fixture in fixtures], ensure_ascii=False, indent=2, default=_default),
         encoding="utf-8",
     )
+    temporary.replace(path)
 
 
 def load_eligible_fixtures(path: Path) -> list[EligibleFixture]:

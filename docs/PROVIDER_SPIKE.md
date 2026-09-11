@@ -110,7 +110,13 @@ $env:PYTHONPATH = "src"
 python scripts/discover_candidates.py --date 2026-09-05 --max-pages 3 --daily-reserve 15
 ```
 
-La salida indica `pages_read` y `total_pages_reported`. Si son distintos, el registro tiene cobertura parcial y no representa toda la jornada. El límite de páginas protege la cuota del plan gratuito mientras se definen competiciones prioritarias.
+La salida indica `pages_read` y `total_pages_reported`. El plan gratuito limita
+el parámetro `page` a un máximo de 3 aunque informe más páginas. Para ampliar la
+cobertura, el descubridor obtiene el catálogo del día y consulta individualmente
+los próximos fixtures que no aparecieron en esas páginas. Las consultas se espacian
+siete segundos para respetar el límite por minuto y se detienen al alcanzar
+`daily-reserve`. `fixture_queries` permite auditar ese gasto adicional. El máximo
+se puede ajustar con `--maximum-fixture-queries`; usar `0` desactiva la ampliación.
 
 El descubrimiento añade nombres e IDs de equipos mediante el catálogo de
 fixtures. Con ellos se puede comprobar el cruce conservador contra el feed live

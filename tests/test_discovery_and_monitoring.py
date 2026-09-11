@@ -7,6 +7,7 @@ from brain_projectbet.collection.storage import append_alert_once
 from brain_projectbet.discovery.eligible import (
     discover_eligible_fixtures,
     enrich_eligible_fixtures,
+    upcoming_fixture_ids,
 )
 from brain_projectbet.discovery.storage import load_eligible_fixtures, save_eligible_fixtures
 from brain_projectbet.domain.alerts import AlertEvent, trigger_once_alert_id
@@ -74,6 +75,22 @@ class DiscoveryTests(unittest.TestCase):
         }]})
         self.assertEqual(enriched[0].home_team_name, "Local FC")
         self.assertEqual(enriched[0].away_team_id, "2")
+
+    def test_prioritizes_uncovered_not_started_fixtures_by_kickoff(self) -> None:
+        payload = {"response": [
+            {"fixture": {"id": 1, "date": "2026-09-11T21:00:00+00:00", "status": {"short": "NS"}},
+             "league": {"id": 10, "season": 2026}},
+            {"fixture": {"id": 2, "date": "2026-09-11T19:00:00+00:00", "status": {"short": "NS"}},
+             "league": {"id": 20, "season": 2026}},
+            {"fixture": {"id": 3, "date": "2026-09-11T18:00:00+00:00", "status": {"short": "2H"}},
+             "league": {"id": 30, "season": 2026}},
+            {"fixture": {"id": 4, "date": "2026-09-11T17:00:00+00:00", "status": {"short": "NS"}},
+             "league": {"id": 40, "season": 2026}},
+        ]}
+
+        fixtures = upcoming_fixture_ids(payload, {"4"})
+
+        self.assertEqual(fixtures, ["2", "1"])
 
 
 class MonitoringSelectionTests(unittest.TestCase):

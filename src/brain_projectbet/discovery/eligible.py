@@ -61,6 +61,27 @@ def enrich_eligible_fixtures(
     return tuple(enriched)
 
 
+def upcoming_fixture_ids(
+    fixture_payload: Mapping[str, Any],
+    covered_fixture_ids: set[str],
+) -> list[str]:
+    """Prioriza partidos aún no iniciados que no aparecieron en las páginas leídas."""
+    upcoming: list[tuple[datetime, str]] = []
+    for entry in fixture_payload.get("response", []):
+        fixture = entry.get("fixture", {})
+        fixture_id = str(fixture.get("id", ""))
+        if not fixture_id or fixture_id in covered_fixture_ids:
+            continue
+        if fixture.get("status", {}).get("short") != "NS":
+            continue
+        try:
+            kickoff = datetime.fromisoformat(str(fixture["date"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        upcoming.append((kickoff, fixture_id))
+    return [fixture_id for _, fixture_id in sorted(upcoming)]
+
+
 def discover_eligible_fixtures(
     payloads: list[Mapping[str, Any]],
     *,
