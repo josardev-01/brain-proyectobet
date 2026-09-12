@@ -173,7 +173,15 @@ python scripts/finalize_matches.py --registry data/raw/eligible/AAAA-MM-DD.json 
 python scripts/summarize_backtests.py
 ```
 
-El finalizador consulta primero el estado del fixture. Solo para `FT`, `AET` o `PEN` descarga los eventos, añade el estado terminal a la serie, ejecuta el replay y escribe un resultado deduplicado en `data/raw/backtesting/results.jsonl`. Por defecto espera 105 minutos desde el inicio previsto y procesa como máximo tres fixtures por ejecución.
+El finalizador consulta primero el estado del fixture. Solo para `FT`, `AET` o
+`PEN` descarga los eventos, añade el estado terminal a la serie, ejecuta el replay
+y escribe un resultado deduplicado en `data/raw/backtesting/results.jsonl`. Por
+defecto espera 105 minutos desde el inicio previsto y procesa como máximo tres
+fixtures por ejecución. El saldo conocido y los partidos que todavía siguen `NS`
+se conservan en `data/raw/finalization/state.json`: un saldo en la reserva bloquea
+nuevas consultas incluso después de reiniciar el proceso, y un partido no terminado
+espera 12 horas antes de volver a comprobarse. Esto evita agotar la cuota mediante
+reintentos de cierre sin información nueva.
 
 El resumen calcula precisión únicamente sobre alertas con resultado observable. Mientras no exista una población completa de oportunidades etiquetadas, `recall`, `F1` y `lift` se mantienen en `null` deliberadamente.
 

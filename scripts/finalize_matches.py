@@ -18,6 +18,10 @@ from brain_projectbet.collection.storage import append_snapshot, load_snapshots
 from brain_projectbet.discovery.storage import load_eligible_fixtures
 from brain_projectbet.domain.models import PrematchOdds
 from brain_projectbet.normalization.api_football import normalize_snapshot
+from brain_projectbet.orchestration.finalization_state import (
+    load_finalization_state,
+    save_finalization_state,
+)
 from brain_projectbet.providers.api_football import ApiFootballProbe
 from brain_projectbet.providers.http import ProviderHttpError
 from brain_projectbet.providers.quota import quota_block_reason
@@ -48,10 +52,16 @@ def main() -> int:
     parser.add_argument("--daily-reserve", type=int, default=15)
     parser.add_argument("--minimum-age-minutes", type=int, default=105)
     parser.add_argument("--maximum-fixtures", type=int, default=3)
+    parser.add_argument("--retry-cooldown-minutes", type=int, default=720)
+    parser.add_argument(
+        "--state",
+        type=Path,
+        default=Path("data/raw/finalization/state.json"),
+    )
     parser.add_argument("--strategy", type=Path, default=DEFAULT_STRATEGY_PATH)
     args = parser.parse_args()
-    if args.minimum_age_minutes < 0 or args.maximum_fixtures <= 0:
-        parser.error("minimum-age-minutes no puede ser negativo y maximum-fixtures debe ser positivo")
+    if args.minimum_age_minutes < 0 or args.maximum_fixtures <= 0 or args.retry_cooldown_minutes <= 0:
+        parser.error("edades no negativas, máximo positivo y cooldown mayor que cero")
     if not args.registry.exists():
         parser.error(f"registro no encontrado: {args.registry}")
 
@@ -64,6 +74,7 @@ def main() -> int:
     candidate_policy = strategy.candidate_policy
     rule = strategy.pressure_policy
     now = datetime.now(UTC)
+    state = load_finalization_state(args.state)
     processed = []
     daily_remaining = None
     minute_remaining = None
@@ -73,6 +84,7 @@ def main() -> int:
         fixture
         for fixture in fixtures
         if fixture.kickoff_at + timedelta(minutes=args.minimum_age_minutes) <= now
+        and state.can_check_fixture(fixture.fixture_id, now=now)
         and backtest_record_id(
             provider=fixture.provider,
             fixture_id=fixture.fixture_id,
@@ -83,7 +95,11 @@ def main() -> int:
         ) not in existing_ids
     ][: args.maximum_fixtures]
 
-    for registered in due:
+    if not state.can_spend(on_date=now.date().isoformat(), requested=1, reserve=args.daily_reserve):
+        daily_remaining = state.daily_remaining
+        stopped = "daily_reserve_cached"
+
+    for registered in due if stopped is None else []:
         if daily_remaining is not None or minute_remaining is not None:
             reason = quota_block_reason(
                 fixture_limits,
@@ -101,6 +117,10 @@ def main() -> int:
         fixture_limits = fixture_response.rate_limits()
         daily_remaining = fixture_limits.daily_remaining
         minute_remaining = fixture_limits.minute_remaining
+        if daily_remaining is not None:
+            state.quota_date = now.date().isoformat()
+            state.daily_remaining = daily_remaining
+            save_finalization_state(args.state, state)
         response = fixture_response.payload.get("response", [])
         if not response:
             processed.append({"fixture_id": registered.fixture_id, "status": "fixture_missing"})
@@ -108,8 +128,13 @@ def main() -> int:
         fixture_payload = response[0]
         match_status = str(fixture_payload.get("fixture", {}).get("status", {}).get("short", "UNKNOWN"))
         if match_status not in RESULT_STATUSES:
+            state.deferred_until[registered.fixture_id] = now + timedelta(
+                minutes=args.retry_cooldown_minutes,
+            )
+            save_finalization_state(args.state, state)
             processed.append({"fixture_id": registered.fixture_id, "status": match_status, "finalized": False})
             continue
+        state.deferred_until.pop(registered.fixture_id, None)
         reason = quota_block_reason(
             fixture_limits,
             requested=1,
@@ -145,6 +170,10 @@ def main() -> int:
         fixture_limits = event_response.rate_limits()
         daily_remaining = fixture_limits.daily_remaining
         minute_remaining = fixture_limits.minute_remaining
+        if daily_remaining is not None:
+            state.quota_date = now.date().isoformat()
+            state.daily_remaining = daily_remaining
+        save_finalization_state(args.state, state)
         events = event_response.payload.get("response", [])
         event_output = Path("data/raw/events") / f"api-football-{registered.fixture_id}.json"
         event_output.parent.mkdir(parents=True, exist_ok=True)
