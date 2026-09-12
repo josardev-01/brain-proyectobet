@@ -26,4 +26,4 @@ Los campos estadísticos ausentes son nulos. Esto distingue “cero observado”
 - Una entrega exitosa no vuelve a enviarse al mismo destino; los fallos quedan reintentables.
 - El resultado de backtesting es único por partido, objetivo y versiones.
 
-La migración inicial se encuentra en `migrations/versions/`. Cambios posteriores deben generar otra revisión de Alembic; nunca se editará el esquema productivo manualmente.
+La migración inicial se encuentra en `backend/migrations/versions/`. Cambios posteriores deben generar otra revisión de Alembic; nunca se editará el esquema productivo manualmente.

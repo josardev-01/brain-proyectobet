@@ -1,0 +1,4 @@
+interface:
+  display_name: "Testing de ProjectBet"
+  short_description: "Diseña y ejecuta pruebas reproducibles por riesgo"
+  default_prompt: "Usa $project-testing-engineer para validar este cambio de ProjectBet con pruebas reproducibles."

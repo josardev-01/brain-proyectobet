@@ -1,4 +1,6 @@
 :root {
+  --font-body: "Segoe UI", Arial, sans-serif;
+  --font-display: "Arial Narrow", "Segoe UI", Arial, sans-serif;
   --ink: #eaf2ee;
   --muted: #90a49b;
   --panel: rgba(15, 31, 27, .82);

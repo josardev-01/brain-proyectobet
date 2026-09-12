@@ -1,0 +1,4 @@
+interface:
+  display_name: "Auditor de arquitectura ProjectBet"
+  short_description: "Revisa estructura, limites y flujo tecnico del sistema"
+  default_prompt: "Usa $project-architecture-auditor para auditar esta decision o cambio estructural de ProjectBet."

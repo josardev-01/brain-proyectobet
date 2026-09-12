@@ -19,7 +19,7 @@ estado: HEURÍSTICA
 
 El objetivo no está integrado en los clientes de proveedores. `TargetEvent` y `ObjectiveDefinition` permiten cambiar evento, sujeto, horizonte y precondiciones sin modificar la capa de adquisición.
 
-La estrategia ejecutable completa está en `config/strategies/favorite_losing_pressure_v2.json`. Allí se definen también el filtro de cuota/probabilidad, minutos de calentamiento y activación, ventana y umbrales de presión. Todos los comandos aceptan `--strategy RUTA`.
+La estrategia ejecutable completa está en `backend/config/strategies/favorite_losing_pressure_v2.json`. Allí se definen también el filtro de cuota/probabilidad, minutos de calentamiento y activación, ventana y umbrales de presión. Todos los comandos aceptan `--strategy RUTA`.
 
 Una estrategia ya usada para producir resultados es inmutable. Para experimentar, copiar el archivo, incrementar `version` y cambiar sus parámetros; no editar silenciosamente la versión anterior. Incorporar otro tipo de evento no modifica proveedor ni normalización, pero sí requiere un evaluador y etiquetador apropiados para ese evento.
 
@@ -45,18 +45,18 @@ Completar las claves en `.env`. El archivo está excluido de Git.
 Para ejecutar desde el repositorio sin instalar el paquete:
 
 ```powershell
-$env:PYTHONPATH = "src"
-python scripts/provider_spike.py api-football live
-python scripts/provider_spike.py api-football statistics --fixture-id ID
-python scripts/provider_spike.py api-football odds --fixture-id ID
-python scripts/provider_spike.py sportmonks live
-python scripts/provider_spike.py sportmonks odds --fixture-id ID
-python scripts/provider_spike.py goal-api live
-python scripts/provider_spike.py goal-api statistics --fixture-id ID
-python scripts/provider_spike.py goal-api events --fixture-id ID
-python scripts/provider_spike.py apifootball-com live
-python scripts/provider_spike.py apifootball-com statistics --fixture-id ID
-python scripts/provider_spike.py apifootball-com odds --fixture-id ID
+$env:PYTHONPATH = "backend/src"
+python backend/scripts/provider_spike.py api-football live
+python backend/scripts/provider_spike.py api-football statistics --fixture-id ID
+python backend/scripts/provider_spike.py api-football odds --fixture-id ID
+python backend/scripts/provider_spike.py sportmonks live
+python backend/scripts/provider_spike.py sportmonks odds --fixture-id ID
+python backend/scripts/provider_spike.py goal-api live
+python backend/scripts/provider_spike.py goal-api statistics --fixture-id ID
+python backend/scripts/provider_spike.py goal-api events --fixture-id ID
+python backend/scripts/provider_spike.py apifootball-com live
+python backend/scripts/provider_spike.py apifootball-com statistics --fixture-id ID
+python backend/scripts/provider_spike.py apifootball-com odds --fixture-id ID
 ```
 
 Las respuestas se guardan en `data/raw/provider-spike/`, fuera del control de versiones. No deben contener nuestras claves, aunque sí pueden contener datos sujetos a las condiciones del proveedor; no publicarlas sin revisar la licencia aplicable.
@@ -66,8 +66,8 @@ Las respuestas se guardan en `data/raw/provider-spike/`, fuera del control de ve
 Una vez identificado un fixture y un bookmaker con mercado 1X2:
 
 ```powershell
-$env:PYTHONPATH = "src"
-python scripts/collect_fixture.py --fixture-id ID --cycles 1
+$env:PYTHONPATH = "backend/src"
+python backend/scripts/collect_fixture.py --fixture-id ID --cycles 1
 ```
 
 Por defecto se utiliza el consenso mediano de al menos tres bookmakers. Para forzar una casa específica, añade por ejemplo `--bookmaker Bet365`.
@@ -81,7 +81,7 @@ Los procesos por lotes comprueban la capacidad necesaria antes de comenzar el si
 Ejemplo de 16 capturas:
 
 ```powershell
-python scripts/collect_fixture.py --fixture-id ID --bookmaker Bet365 --cycles 16 --interval-seconds 60 --minimum-remaining 10
+python backend/scripts/collect_fixture.py --fixture-id ID --bookmaker Bet365 --cycles 16 --interval-seconds 60 --minimum-remaining 10
 ```
 
 Los snapshots se guardan como JSON Lines en `data/raw/snapshots/`. Las ventanas solo se consideran disponibles cuando existe un snapshot de referencia suficientemente antiguo; una corrección decreciente del proveedor produce `null`, no actividad negativa.
@@ -106,8 +106,8 @@ La alerta no equivale al candidato. Se evalúa únicamente con una ventana compl
 El registro diario se puede generar sin conocer de antemano los identificadores de los partidos:
 
 ```powershell
-$env:PYTHONPATH = "src"
-python scripts/discover_candidates.py --date 2026-09-05 --max-pages 3 --daily-reserve 15
+$env:PYTHONPATH = "backend/src"
+python backend/scripts/discover_candidates.py --date 2026-09-05 --max-pages 3 --daily-reserve 15
 ```
 
 La salida indica `pages_read` y `total_pages_reported`. El plan gratuito limita
@@ -123,8 +123,8 @@ fixtures. Con ellos se puede comprobar el cruce conservador contra el feed live
 de APIFootball.com:
 
 ```powershell
-python scripts/reconcile_live_providers.py --registry data/raw/eligible/AAAA-MM-DD.json
-python scripts/reconcile_live_providers.py --registry data/raw/eligible/AAAA-MM-DD.json --write-snapshots
+python backend/scripts/reconcile_live_providers.py --registry data/raw/eligible/AAAA-MM-DD.json
+python backend/scripts/reconcile_live_providers.py --registry data/raw/eligible/AAAA-MM-DD.json --write-snapshots
 ```
 
 Sin `--write-snapshots` el comando solo informa. La reconciliación compara los
@@ -134,7 +134,7 @@ mínima y rechaza empates o coincidencias cercanas.
 El monitor consulta primero la lista global de partidos en vivo. Toma una línea base estadística de cada elegible desde el minuto 35 y luego vuelve a solicitar estadísticas solo mientras el favorito esté perdiendo desde el minuto 45:
 
 ```powershell
-python scripts/monitor_candidates.py --cycles 1 --maximum-matches 3 --daily-reserve 15
+python backend/scripts/monitor_candidates.py --cycles 1 --maximum-matches 3 --daily-reserve 15
 ```
 
 Cada ciclo consume una consulta global, una consulta inicial por partido al crear su línea base y después una consulta por favorito que esté perdiendo. El proceso conserva una reserva diaria y no emite más de una alerta por combinación de partido, objetivo y versión de regla. Conviene usar intervalos que permitan obtener diferencias reales de 10 minutos; si falta una captura, el motor rechaza la ventana desalineada en lugar de tratarla como válida.
@@ -142,7 +142,7 @@ Cada ciclo consume una consulta global, una consulta inicial por partido al crea
 Para probar otra versión sin cambiar el código:
 
 ```powershell
-python scripts/monitor_candidates.py --strategy config/strategies/MI_ESTRATEGIA.json --cycles 1
+python backend/scripts/monitor_candidates.py --strategy backend/config/strategies/MI_ESTRATEGIA.json --cycles 1
 ```
 
 Archivos locales generados, todos excluidos de Git:
@@ -157,9 +157,9 @@ Archivos locales generados, todos excluidos de Git:
 Cuando el partido haya terminado, guardar sus eventos exactos y reproducir la decisión:
 
 ```powershell
-$env:PYTHONPATH = "src"
-python scripts/provider_spike.py api-football events --fixture-id ID
-python scripts/replay_fixture.py --fixture-id ID --registry data/raw/eligible/AAAA-MM-DD.json --events RUTA_AL_JSON_DE_EVENTOS
+$env:PYTHONPATH = "backend/src"
+python backend/scripts/provider_spike.py api-football events --fixture-id ID
+python backend/scripts/replay_fixture.py --fixture-id ID --registry data/raw/eligible/AAAA-MM-DD.json --events RUTA_AL_JSON_DE_EVENTOS
 ```
 
 El replay recorre los snapshots cronológicamente. Para cada decisión, la regla solo recibe el prefijo de la serie conocido hasta ese instante; los eventos futuros se usan después y únicamente como etiqueta. Se informa la primera alerta del episodio, coherente con la política antispam del monitor.
@@ -169,8 +169,8 @@ Un resultado `outcome: null` es desconocido o censurado, no un fallo de la regla
 El cierre de todos los partidos elegibles que ya deberían haber terminado se automatiza así:
 
 ```powershell
-python scripts/finalize_matches.py --registry data/raw/eligible/AAAA-MM-DD.json --daily-reserve 15
-python scripts/summarize_backtests.py
+python backend/scripts/finalize_matches.py --registry data/raw/eligible/AAAA-MM-DD.json --daily-reserve 15
+python backend/scripts/summarize_backtests.py
 ```
 
 El finalizador consulta primero el estado del fixture. Solo para `FT`, `AET` o
@@ -193,7 +193,7 @@ El resumen calcula precisión únicamente sobre alertas con resultado observable
 Antes de interpretar alertas o métricas, auditar las series locales:
 
 ```powershell
-python scripts/audit_data_quality.py
+python backend/scripts/audit_data_quality.py
 ```
 
 El reporte se guarda en `data/raw/quality/report.json` e informa cobertura de campos, snapshots terminales, duplicados del reloj, hueco temporal máximo y cuántos fixtures permiten reconstruir al menos una ventana exacta de 10 minutos. Un campo ausente permanece ausente; no se convierte en cero.
@@ -201,7 +201,7 @@ El reporte se guarda en `data/raw/quality/report.json` e informa cobertura de ca
 Para distinguir un partido sin escenario de un escenario perdido por falta de monitoreo:
 
 ```powershell
-python scripts/audit_scenario_exposure.py --registry data/raw/eligible/AAAA-MM-DD.json
+python backend/scripts/audit_scenario_exposure.py --registry data/raw/eligible/AAAA-MM-DD.json
 ```
 
 La auditoría reconstruye únicamente la trayectoria del marcador usando eventos finales y verifica que coincida con el resultado. Sirve para medir cobertura operativa; nunca se usa como información disponible para la regla en vivo.
@@ -211,13 +211,13 @@ La auditoría reconstruye únicamente la trayectoria del marcador usando eventos
 Las alertas se guardan primero como una bandeja local. Para revisar mensajes pendientes sin enviarlos:
 
 ```powershell
-python scripts/send_pending_alerts.py --dry-run
+python backend/scripts/send_pending_alerts.py --dry-run
 ```
 
 La entrega real requiere completar `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` en `.env` y ejecutar:
 
 ```powershell
-python scripts/send_pending_alerts.py
+python backend/scripts/send_pending_alerts.py
 ```
 
 Cada envío confirmado crea un recibo en `data/raw/notifications/receipts.jsonl`. Un fallo conserva la alerta como pendiente para reintentarla; una ejecución repetida no vuelve a enviar entregas ya confirmadas al mismo destino.

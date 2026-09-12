@@ -10,7 +10,7 @@ from brain_projectbet.domain.objectives import ObjectiveDefinition, TargetEvent
 from brain_projectbet.rules.favorite_pressure import FavoritePressurePolicy
 
 
-DEFAULT_STRATEGY_PATH = Path("config/strategies/favorite_losing_pressure_v2.json")
+DEFAULT_STRATEGY_PATH = Path("backend/config/strategies/favorite_losing_pressure_v2.json")
 STATUSES = {"HEURÍSTICA", "EXPERIMENTAL", "VALIDADA"}
 
 

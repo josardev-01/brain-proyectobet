@@ -19,7 +19,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: docker/backend.Dockerfile
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://projectbet:projectbet_local@postgres:5432/projectbet
@@ -41,7 +41,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: docker/frontend.Dockerfile
+      dockerfile: frontend/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
     restart: unless-stopped
@@ -56,9 +56,9 @@ services:
   notifier:
     build:
       context: .
-      dockerfile: docker/backend.Dockerfile
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
-    command: ["sh", "-c", "while true; do python scripts/send_database_alerts.py --maximum 20; sleep 30; done"]
+    command: ["sh", "-c", "while true; do python backend/scripts/send_database_alerts.py --maximum 20; sleep 30; done"]
     environment:
       DATABASE_URL: postgresql+psycopg://projectbet:projectbet_local@postgres:5432/projectbet
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN is required}
@@ -69,7 +69,7 @@ services:
   monitor:
     build:
       context: .
-      dockerfile: docker/backend.Dockerfile
+      dockerfile: backend/Dockerfile
     restart: unless-stopped
     command:
       - sh
@@ -79,9 +79,9 @@ services:
           day=$$(date -u +%F);
           registry="data/raw/eligible/$$day.json";
           if [ ! -f "$$registry" ]; then
-            python scripts/discover_candidates.py --date "$$day" --max-pages 3 --daily-reserve 15;
+            python backend/scripts/discover_candidates.py --date "$$day" --max-pages 3 --daily-reserve 15;
           fi;
-          python scripts/run_matchday.py --registry "$$registry" --live-provider apifootball-com --interval-seconds 120 --daily-reserve 15;
+          python backend/scripts/run_matchday.py --registry "$$registry" --live-provider apifootball-com --interval-seconds 120 --daily-reserve 15;
           sleep 300;
         done
     environment:

@@ -43,7 +43,7 @@ Caddy solicita y renueva automáticamente el certificado cuando el DNS y los pue
 
 ```bash
 docker compose --env-file .env.production -f compose.production.yaml run --rm api \
-  python scripts/bootstrap_admin.py \
+  python backend/scripts/bootstrap_admin.py \
   --email mendez.josar87@gmail.com \
   --display-name Administrador \
   --telegram-chat-id 1631763640

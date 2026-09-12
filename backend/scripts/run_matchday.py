@@ -30,9 +30,9 @@ def plan_payload(plan: MatchdayPlan) -> dict:
 
 def run_script(script: str, arguments: list[str]) -> tuple[int, dict | None]:
     environment = os.environ.copy()
-    environment["PYTHONPATH"] = "src"
+    environment["PYTHONPATH"] = "backend/src"
     completed = subprocess.run(
-        [sys.executable, str(Path("scripts") / script), *arguments],
+        [sys.executable, str(Path("backend/scripts") / script), *arguments],
         cwd=Path.cwd(),
         env=environment,
         check=False,

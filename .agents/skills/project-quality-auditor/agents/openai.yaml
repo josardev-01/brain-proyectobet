@@ -1,0 +1,4 @@
+interface:
+  display_name: "Control de calidad ProjectBet"
+  short_description: "Evalua readiness, UX, datos y mantenibilidad"
+  default_prompt: "Usa $project-quality-auditor para emitir el control final de calidad de este cambio de ProjectBet."

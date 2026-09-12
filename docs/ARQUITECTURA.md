@@ -16,7 +16,7 @@ Next.js dashboard
 evento de alerta → bandeja persistente → adaptador Telegram
 ```
 
-Los archivos operativos continúan siendo una bitácora recuperable durante la transición. La aplicación consulta la base de datos; `scripts/sync_database.py` proyecta la bitácora hacia tablas normalizadas sin duplicados. El worker ejecuta esa sincronización después de cada ciclo cuando las dependencias del backend están instaladas.
+Los archivos operativos continúan siendo una bitácora recuperable durante la transición. La aplicación consulta la base de datos; `backend/scripts/sync_database.py` proyecta la bitácora hacia tablas normalizadas sin duplicados. El worker ejecuta esa sincronización después de cada ciclo cuando las dependencias del backend están instaladas.
 
 ## Backend
 

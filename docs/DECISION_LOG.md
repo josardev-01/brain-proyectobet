@@ -104,7 +104,7 @@
 
 **Problema:** Aunque objetivo y políticas estaban representados por clases, los scripts seleccionaban constantes fijas. Cambiar umbrales exigía editar código y podía desalinear descubrimiento, monitoreo y backtesting.
 
-**Decisión:** Cada ejecución carga una estrategia JSON que reúne identidad, versión, estado estadístico, objetivo, política de candidatos, tipo de regla y parámetros. Todos los comandos del ciclo aceptan `--strategy` y usan por defecto `config/strategies/favorite_losing_pressure_v2.json`.
+**Decisión:** Cada ejecución carga una estrategia JSON que reúne identidad, versión, estado estadístico, objetivo, política de candidatos, tipo de regla y parámetros. Todos los comandos del ciclo aceptan `--strategy` y usan por defecto `backend/config/strategies/favorite_losing_pressure_v2.json`.
 
 **Motivo:** Garantiza que filtro pre-partido, ventana, trigger y replay usen la misma definición, y permite comparar nuevas versiones sin tocar adquisición ni normalización.
 

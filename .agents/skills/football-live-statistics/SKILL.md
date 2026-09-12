@@ -5,7 +5,7 @@ description: Diseña, implementa y evalúa el sistema de estadísticas y alertas
 
 # Estadísticas de fútbol en vivo
 
-Usa `../../../CEREBRO_ESTADISTICAS_FUTBOL.md` como fuente de verdad del producto. Léelo completo antes de una decisión arquitectónica, estadística o de alcance; para tareas pequeñas, localiza y lee las secciones pertinentes. Si el archivo y el código difieren, informa la discrepancia y no presentes la intención documental como comportamiento ya implementado.
+Usa `../../../docs/CEREBRO_ESTADISTICAS_FUTBOL.md` como fuente de verdad del producto. Léelo completo antes de una decisión arquitectónica, estadística o de alcance; para tareas pequeñas, localiza y lee las secciones pertinentes. Si el archivo y el código difieren, informa la discrepancia y no presentes la intención documental como comportamiento ya implementado.
 
 ## Forma de trabajo
 
@@ -46,4 +46,3 @@ Usa `../../../CEREBRO_ESTADISTICAS_FUTBOL.md` como fuente de verdad del producto
 6. Indica qué está implementado, qué sigue siendo provisional y qué requiere datos reales o backtesting.
 
 No conviertas automáticamente toda sugerencia del documento en trabajo autorizado. El alcance lo determina la petición actual del usuario.
-

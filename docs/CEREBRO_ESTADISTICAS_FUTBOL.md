@@ -1099,16 +1099,16 @@ Cuando el contexto crezca demasiado, recomendar al usuario consolidar informaci√
 Mantener progresivamente:
 
 ```text
-/CEREBRO.md
-/ARQUITECTURA.md
-/MODELO_DATOS.md
-/MOTOR_REGLAS.md
-/FORMULAS.md
-/DECISION_LOG.md
-/BACKTESTING.md
+/docs/CEREBRO_ESTADISTICAS_FUTBOL.md
+/docs/ARQUITECTURA.md
+/docs/MODELO_DATOS.md
+/docs/MOTOR_REGLAS.md
+/docs/FORMULAS.md
+/docs/DECISION_LOG.md
+/docs/BACKTESTING.md
 ```
 
-`CEREBRO.md` contiene principios relativamente estables.
+`docs/CEREBRO_ESTADISTICAS_FUTBOL.md` contiene principios relativamente estables.
 
 Los detalles t√©cnicos que cambian con frecuencia deben trasladarse a los documentos especializados para evitar inflar innecesariamente el contexto principal.
 

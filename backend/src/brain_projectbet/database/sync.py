@@ -145,7 +145,7 @@ def sync_registry(session: Session, registry: Path) -> dict[str, int]:
     return {"matches": created_matches, "snapshots": created_snapshots}
 
 
-def sync_strategies(session: Session, directory: Path = Path("config/strategies")) -> int:
+def sync_strategies(session: Session, directory: Path = Path("backend/config/strategies")) -> int:
     created = 0
     for path in directory.glob("*.json"):
         config = json.loads(path.read_text(encoding="utf-8"))
