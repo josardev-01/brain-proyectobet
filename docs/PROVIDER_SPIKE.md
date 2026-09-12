@@ -181,7 +181,10 @@ fixtures por ejecución. El saldo conocido y los partidos que todavía siguen `N
 se conservan en `data/raw/finalization/state.json`: un saldo en la reserva bloquea
 nuevas consultas incluso después de reiniciar el proceso, y un partido no terminado
 espera 12 horas antes de volver a comprobarse. Esto evita agotar la cuota mediante
-reintentos de cierre sin información nueva.
+reintentos de cierre sin información nueva. El ejecutor de jornada distingue la
+reserva live (`--daily-reserve`, 15 por defecto) de la reserva final absoluta
+(`--finalization-reserve`, 1 por defecto), de modo que el cierre sí puede utilizar
+el presupuesto apartado para descargar resultados y eventos.
 
 El resumen calcula precisión únicamente sobre alertas con resultado observable. Mientras no exista una población completa de oportunidades etiquetadas, `recall`, `F1` y `lift` se mantienen en `null` deliberadamente.
 

@@ -65,6 +65,12 @@ def main() -> int:
     parser.add_argument("--maximum-matches", type=int, default=3)
     parser.add_argument("--daily-reserve", type=int, default=15)
     parser.add_argument(
+        "--finalization-reserve",
+        type=int,
+        default=1,
+        help="Saldo mínimo conservado después de descargar resultados y eventos",
+    )
+    parser.add_argument(
         "--live-provider", choices=("api-football", "apifootball-com"),
         default="apifootball-com",
     )
@@ -76,8 +82,8 @@ def main() -> int:
         help="No sincroniza los archivos capturados hacia la base de datos",
     )
     args = parser.parse_args()
-    if args.interval_seconds <= 0 or args.maximum_matches <= 0:
-        parser.error("interval-seconds y maximum-matches deben ser positivos")
+    if args.interval_seconds <= 0 or args.maximum_matches <= 0 or args.finalization_reserve < 0:
+        parser.error("intervalo y máximo positivos; reserva de cierre no negativa")
     if not args.registry.exists():
         parser.error(f"registro no encontrado: {args.registry}")
 
@@ -90,7 +96,6 @@ def main() -> int:
     common = [
         "--registry", str(args.registry),
         "--strategy", str(args.strategy),
-        "--daily-reserve", str(args.daily_reserve),
     ]
 
     while True:
@@ -104,6 +109,7 @@ def main() -> int:
             )
             monitor_arguments = [
                 *common,
+                "--daily-reserve", str(args.daily_reserve),
                 "--cycles", "1",
             ]
             if args.live_provider == "api-football":
@@ -133,6 +139,7 @@ def main() -> int:
             while True:
                 exit_code, payload = run_script("finalize_matches.py", [
                     *common,
+                    "--daily-reserve", str(args.finalization_reserve),
                     "--maximum-fixtures", str(args.maximum_matches),
                 ])
                 if exit_code or (payload and payload.get("stopped")):
