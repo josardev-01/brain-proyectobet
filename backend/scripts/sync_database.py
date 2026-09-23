@@ -15,7 +15,10 @@ def main() -> int:
     parser.add_argument("--registry", type=Path, action="append", default=[])
     args = parser.parse_args()
 
-    registries = args.registry or sorted(Path("data/raw/eligible").glob("*.json"))
+    registries = args.registry or sorted({
+        *Path("data/raw/eligible").glob("*.json"),
+        *Path("data/raw/coverage").glob("*.json"),
+    })
     Base.metadata.create_all(engine)
     totals = {
         "matches": 0, "snapshots": 0, "strategies": 0, "alerts": 0,

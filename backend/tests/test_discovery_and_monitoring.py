@@ -36,6 +36,22 @@ def odds_entry(fixture_id="10", away_odds=(1.42, 1.45, 1.40)):
 
 
 class DiscoveryTests(unittest.TestCase):
+    def test_all_odds_coverage_keeps_non_favorite_fixture(self) -> None:
+        entry = odds_entry("11")
+        entry["bookmakers"] = [
+            bookmaker("A", 2.20, 3.20, 3.00),
+            bookmaker("B", 2.25, 3.10, 3.05),
+            bookmaker("C", 2.15, 3.25, 3.10),
+        ]
+        filtered = discover_eligible_fixtures([{"response": [entry]}], discovered_at=datetime.now(UTC))
+        broad = discover_eligible_fixtures(
+            [{"response": [entry]}], discovered_at=datetime.now(UTC),
+            apply_candidate_policy=False,
+        )
+        self.assertEqual(len(filtered.eligible), 0)
+        self.assertEqual(len(broad.eligible), 1)
+        self.assertEqual(broad.eligible[0].fixture_id, "11")
+
     def test_discovers_clear_favorite_from_consensus(self) -> None:
         result = discover_eligible_fixtures(
             [{"response": [odds_entry()]}], discovered_at=datetime.now(UTC)

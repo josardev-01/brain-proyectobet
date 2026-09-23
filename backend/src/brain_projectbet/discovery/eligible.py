@@ -87,6 +87,7 @@ def discover_eligible_fixtures(
     *,
     discovered_at: datetime,
     policy: CandidatePolicy = CandidatePolicy(),
+    apply_candidate_policy: bool = True,
 ) -> DiscoveryResult:
     eligible: list[EligibleFixture] = []
     evaluated = 0
@@ -111,7 +112,7 @@ def discover_eligible_fixtures(
             probabilities = odds.normalized_probabilities()
             favorite_probability = probabilities[0 if side == "home" else 2]
             favorite_odds = odds.home if side == "home" else odds.away
-            if (
+            if apply_candidate_policy and (
                 favorite_odds > policy.maximum_favorite_odds
                 or favorite_probability < policy.minimum_favorite_probability
             ):

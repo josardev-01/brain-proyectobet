@@ -59,7 +59,9 @@ la versión anterior.
 
 ## Evolución recomendada
 
-El siguiente incremento del constructor debe permitir probar una estrategia sobre
-un partido elegido y mostrar una estimación de cobertura antes de activarla. Los objetivos corner y
+Una estrategia guardada puede probarse sobre un partido con capturas antes de
+activarse. La vista informa coincidencia, datos ausentes, fecha de la última
+captura y vigencia; la prueba no persiste alertas ni envía Telegram. La
+estimación de cobertura sobre varios partidos sigue pendiente. Los objetivos corner y
 tarjeta se pueden definir desde ahora, pero requieren etiquetadores específicos
 antes de presentar backtesting o probabilidades como disponibles.

@@ -1,6 +1,7 @@
 export type Dashboard = {
   matches: number;
   live_matches: number;
+  stale_matches: number;
   strategies: number;
   active_strategies: number;
   alerts: number;
@@ -26,6 +27,8 @@ export type Match = {
   status: string;
   score_home: number | null;
   score_away: number | null;
+  last_snapshot_at: string | null;
+  observation_state: "LIVE" | "STALE" | "SCHEDULED" | "FINISHED";
 };
 
 export type Strategy = {
@@ -91,6 +94,13 @@ export type StrategyEvaluation = {
   missing_metrics: string[];
   metrics: Record<string, unknown>;
   error: string | null;
+};
+
+export type StrategyPreview = StrategyEvaluation & {
+  match_id: number;
+  snapshot_count: number;
+  captured_at: string | null;
+  observation_state: Match["observation_state"];
 };
 
 export type Alert = {

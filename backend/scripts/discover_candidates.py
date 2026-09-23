@@ -38,10 +38,14 @@ def fixture_ids(payloads: list[dict]) -> set[str]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Descubre favoritos claros para monitoreo")
+    parser = argparse.ArgumentParser(description="Descubre partidos con cuotas 1X2 para monitoreo")
     parser.add_argument("--date", default=date.today().isoformat())
     parser.add_argument("--max-pages", type=int, default=3)
     parser.add_argument("--daily-reserve", type=int, default=15)
+    parser.add_argument(
+        "--coverage", choices=("all-odds", "favorite"), default="all-odds",
+        help="all-odds permite evaluar estrategias neutrales; favorite conserva el filtro inicial",
+    )
     parser.add_argument(
         "--maximum-fixture-queries",
         type=int,
@@ -140,6 +144,7 @@ def main() -> int:
         payloads,
         discovered_at=discovered_at,
         policy=strategy.candidate_policy,
+        apply_candidate_policy=args.coverage == "favorite",
     )
     eligible = result.eligible
     if eligible and fixture_catalog is not None:
@@ -151,6 +156,7 @@ def main() -> int:
         "date": args.date,
         "strategy_id": strategy.strategy_id,
         "strategy_version": strategy.version,
+        "coverage": args.coverage,
         "pages_read": pages_read,
         "total_pages_reported": total_pages,
         "stopped_reason": stopped_reason,

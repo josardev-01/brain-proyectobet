@@ -1,6 +1,6 @@
 import tempfile
 import unittest
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 
 from brain_projectbet.api.main import create_app
 from brain_projectbet.core.security import hash_password
-from brain_projectbet.database.models import AlertRecord, MatchRecord, StrategyRecord, UserRecord
+from brain_projectbet.database.models import AlertRecord, MatchRecord, SnapshotRecord, StrategyRecord, UserRecord
 from brain_projectbet.database.session import Base, build_engine, get_db
 
 
@@ -97,6 +97,74 @@ class ApiTests(unittest.TestCase):
         response = self.client.get("/api/v1/matches")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()[0]["provider_match_id"], "42")
+
+    def test_live_count_requires_recent_snapshot_and_plausible_kickoff(self) -> None:
+        now = datetime.now(UTC)
+        with self.sessions.begin() as session:
+            for fixture_id, kickoff, captured in (
+                ("fresh", now - timedelta(hours=1), now - timedelta(minutes=1)),
+                ("old", now - timedelta(days=1), now - timedelta(days=1)),
+            ):
+                match = MatchRecord(
+                    provider="test", provider_match_id=fixture_id, kickoff_at=kickoff,
+                    league_id="1", league_name="Liga", country="PY", favorite_side="home",
+                    favorite_odds=1.4, favorite_probability=0.7, bookmaker_count=3,
+                    status="2H", discovered_at=kickoff, updated_at=captured,
+                )
+                session.add(match)
+                session.flush()
+                session.add(SnapshotRecord(
+                    match_id=match.id, captured_at=captured, minute=60, status="2H",
+                    score_home=1, score_away=0,
+                ))
+            session.add(MatchRecord(
+                provider="test", provider_match_id="never-started", kickoff_at=now - timedelta(days=1),
+                league_id="1", league_name="Liga", country="PY", favorite_side="home",
+                favorite_odds=1.4, favorite_probability=0.7, bookmaker_count=3,
+                status="SCHEDULED", discovered_at=now - timedelta(days=1), updated_at=now,
+            ))
+        dashboard = self.client.get("/api/v1/dashboard").json()
+        self.assertEqual(dashboard["live_matches"], 1)
+        self.assertEqual(dashboard["stale_matches"], 2)
+        matches = self.client.get("/api/v1/matches").json()
+        states = {match["provider_match_id"]: match["observation_state"] for match in matches}
+        self.assertEqual(states, {"fresh": "LIVE", "old": "STALE", "never-started": "STALE"})
+        self.assertTrue(all(match["last_snapshot_at"] for match in matches if match["provider_match_id"] != "never-started"))
+
+    def test_owner_can_preview_inactive_strategy_without_creating_alert(self) -> None:
+        headers = self.auth_headers()
+        now = datetime.now(UTC)
+        with self.sessions.begin() as session:
+            match = MatchRecord(
+                provider="test", provider_match_id="preview", kickoff_at=now - timedelta(hours=1),
+                league_id="1", league_name="Liga", country="PY", favorite_side="away",
+                favorite_odds=1.4, favorite_probability=0.7, bookmaker_count=3,
+                status="2H", discovered_at=now - timedelta(hours=1), updated_at=now,
+            )
+            session.add(match)
+            session.flush()
+            match_id = match.id
+            session.add(SnapshotRecord(match_id=match.id, captured_at=now,
+                                       minute=60, status="2H", score_home=1, score_away=0,
+                                       shots_home=5))
+        payload = {
+            "strategy_key": "preview_shots", "version": 1, "name": "Preview shots",
+            "objective_type": "goal", "objective_subject": "home", "horizon_minutes": 10,
+            "config": {"strategy_id": "preview_shots", "version": 1,
+                       "conditions": [{"metric": "shots_home", "operator": ">=", "value": 4}]},
+        }
+        created = self.client.post("/api/v1/strategies", json=payload, headers=headers)
+        self.assertEqual(created.status_code, 201)
+        strategy_id = created.json()["id"]
+        path = f"/api/v1/strategies/{strategy_id}/preview?match_id={match_id}"
+        self.client.cookies.clear()
+        self.assertEqual(self.client.get(path).status_code, 401)
+        preview = self.client.get(path, headers=headers)
+        self.assertEqual(preview.status_code, 200)
+        self.assertTrue(preview.json()["matched"])
+        self.assertEqual(preview.json()["snapshot_count"], 1)
+        with self.sessions() as session:
+            self.assertEqual(list(session.scalars(select(AlertRecord))), [])
 
     def test_strategy_versions_are_immutable(self) -> None:
         payload = {

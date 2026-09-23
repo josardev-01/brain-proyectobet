@@ -67,7 +67,7 @@ def main() -> int:
                 home_team_id=link.eligible.home_team_id or snapshot.home_team_id,
                 away_team_id=link.eligible.away_team_id or snapshot.away_team_id,
             )
-            if snapshot.minute is None or snapshot.minute < strategy.candidate_policy.warmup_minute:
+            if snapshot.minute is None:
                 continue
             snapshot_path = Path("data/raw/snapshots") / (
                 f"{link.eligible.provider}-{link.eligible.fixture_id}.jsonl"
@@ -81,9 +81,12 @@ def main() -> int:
                 draw=link.eligible.median_draw_odds,
                 away=link.eligible.median_away_odds,
             )
-            candidate = observe_candidate(
-                snapshot, odds, strategy.objective, policy=strategy.candidate_policy
+            candidate = (
+                observe_candidate(snapshot, odds, strategy.objective, policy=strategy.candidate_policy)
+                if snapshot.minute >= strategy.candidate_policy.warmup_minute else None
             )
+            if candidate is not None and not candidate.eligible_prematch:
+                candidate = None
             decision = None
             candidate_saved = alert_saved = False
             if candidate is not None:

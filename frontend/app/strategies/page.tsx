@@ -1,16 +1,18 @@
 import { Empty, PageHeader } from "@/components/shell";
-import { apiGet, type Strategy, type StrategyCatalog } from "@/lib/api";
+import { apiGet, type Match, type Strategy, type StrategyCatalog } from "@/lib/api";
 import { StrategyForm } from "@/components/strategy-form";
 import { StrategyActivation } from "@/components/strategy-activation";
+import { StrategyPreview } from "@/components/strategy-preview";
 import { cookies } from "next/headers";
 import Link from "next/link";
 
 export default async function StrategiesPage({ searchParams }: { searchParams: Promise<{ copy?: string }> }) {
   const cookie = (await cookies()).toString();
   const copyId = Number((await searchParams).copy);
-  const [{ data, online }, { data: catalog }] = await Promise.all([
+  const [{ data, online }, { data: catalog }, { data: matches }] = await Promise.all([
     apiGet<Strategy[]>("/strategies", [], cookie),
     apiGet<StrategyCatalog>("/strategy-catalog", { objectives: [], subjects: [], operators: [], windows: [10], metrics: [], alert_fields: [], leagues: [], countries: [] }),
+    apiGet<Match[]>("/matches?limit=100", []),
   ]);
   const template = Number.isInteger(copyId) ? data.find(item => item.id === copyId) : undefined;
   const nextVersion = template
@@ -21,6 +23,6 @@ export default async function StrategiesPage({ searchParams }: { searchParams: P
     <section className="card-grid spaced">{data.length ? data.map(item => <article className="strategy-card" key={item.id}>
       <div className="panel-head"><span className={`tag ${item.active ? "active" : ""}`}>{item.active ? "ACTIVA" : "INACTIVA"}</span><b>v{item.version}</b></div>
       <h2>{item.name}</h2><p>{item.objective_subject} · {item.objective_type} en {item.horizon_minutes} min</p>
-      <footer><span>{item.statistical_status}</span><code>{item.strategy_key}</code></footer><div className="strategy-action"><Link className="quiet-link" href={`/strategies?copy=${item.id}`}>Usar como base</Link></div><StrategyActivation id={item.id} active={item.active} ownerId={item.owner_id ?? null} />
+      <footer><span>{item.statistical_status}</span><code>{item.strategy_key}</code></footer><div className="strategy-action"><Link className="quiet-link" href={`/strategies?copy=${item.id}`}>Usar como base</Link></div><StrategyPreview strategyId={item.id} matches={matches} /><StrategyActivation id={item.id} active={item.active} ownerId={item.owner_id ?? null} />
     </article>) : <Empty>No hay estrategias sincronizadas.</Empty>}</section></>;
 }

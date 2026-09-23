@@ -293,3 +293,24 @@ alertas también se filtran por usuario; el administrador conserva acceso global
 
 **Impacto:** El motor evalúa automáticamente las estrategias activas después de cada
 sincronización y genera alertas individuales sin exponer configuraciones privadas.
+
+## DEC-029 — Cobertura neutral y vigencia de las observaciones
+
+**Problema:** El editor admite estrategias neutrales, pero el registro diario solo
+guardaba favoritos claros. Además, partidos con estados crudos `2H` de días anteriores
+se mostraban como vivos y podían evaluarse tras un reinicio.
+
+**Decisión:** El monitor registra partidos con consenso 1X2 completo dentro del
+presupuesto de descubrimiento, sin aplicar el umbral del favorito. Ese umbral
+permanece en la regla especializada. La captura puede empezar desde el inicio del
+partido. `LIVE` requiere una captura de menos de diez minutos y comienzo del
+partido dentro de cuatro horas; los estados antiguos y los encuentros que siguen
+programados después de su hora prevista se muestran como datos desactualizados
+y no generan alertas nuevas. El finalizador reintenta jornadas
+anteriores sujetas a la misma reserva de cuota.
+
+**Impacto:** Las estrategias de local y visitante pueden evaluar más partidos,
+pero la cobertura continúa limitada a cuotas completas y a las páginas consultadas.
+Las cuotas faltantes y los objetivos corner/tarjeta aún no tienen etiquetadores
+para medir rendimiento. Probar una estrategia guardada sobre un partido es una
+evaluación puntual, sin emisión de alertas ni validación estadística.

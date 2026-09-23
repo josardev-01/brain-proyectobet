@@ -11,11 +11,9 @@ from sqlalchemy.orm import Session
 from brain_projectbet.database.mappers import snapshot_record_to_domain
 from brain_projectbet.database.models import AlertRecord, MatchRecord, SnapshotRecord, StrategyRecord, UserRecord
 from brain_projectbet.domain.alerts import AlertEvent
+from brain_projectbet.domain.live_state import LIVE_STATUSES, observation_state
 from brain_projectbet.rules.expression import InvalidExpression
 from brain_projectbet.rules.runtime import evaluate_strategy_config
-
-
-LIVE_STATUSES = ("1H", "HT", "2H", "ET", "BT", "P", "LIVE")
 
 
 def _alert_id(owner_id: int, match: MatchRecord, strategy: StrategyRecord) -> str:
@@ -54,6 +52,8 @@ def evaluate_owned_strategy_alerts(session: Session) -> dict[str, int]:
             continue
         snapshots = [snapshot_record_to_domain(match, record) for record in records]
         latest = snapshots[-1]
+        if observation_state(match.status, match.kickoff_at, latest.captured_at) != "LIVE":
+            continue
         context = {
             "home_odds": match.home_odds,
             "draw_odds": match.draw_odds,

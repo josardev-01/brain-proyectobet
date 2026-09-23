@@ -6,8 +6,9 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 
-from brain_projectbet.database.models import AlertRecord, MatchRecord, SnapshotRecord, StrategyRecord, UserRecord
+from brain_projectbet.database.models import AlertRecord, MatchRecord, NotificationEndpointRecord, SnapshotRecord, StrategyRecord, UserRecord
 from brain_projectbet.database.session import Base, build_engine
+from brain_projectbet.notifications.delivery import deliver_pending_alerts
 from brain_projectbet.rules.strategy_alerts import evaluate_owned_strategy_alerts
 
 
@@ -17,14 +18,23 @@ class UserStrategyAlertTests(unittest.TestCase):
             engine = build_engine(f"sqlite:///{(Path(directory) / 'strategy.db').as_posix()}")
             Base.metadata.create_all(engine)
             sessions = sessionmaker(bind=engine, expire_on_commit=False)
-            now = datetime.now(UTC)
+            now = datetime.now(UTC) - timedelta(minutes=60)
             with sessions.begin() as session:
                 owner = UserRecord(
                     email="owner@example.com", display_name="Owner", active=True,
                     role="USER", approval_status="APPROVED", created_at=now,
                 )
                 session.add(owner)
+                other = UserRecord(
+                    email="other@example.com", display_name="Other", active=True,
+                    role="USER", approval_status="APPROVED", created_at=now,
+                )
+                session.add(other)
                 session.flush()
+                session.add_all([
+                    NotificationEndpointRecord(owner_id=owner.id, channel="telegram", destination="111", label="Owner", enabled=True, created_at=now),
+                    NotificationEndpointRecord(owner_id=other.id, channel="telegram", destination="222", label="Other", enabled=True, created_at=now),
+                ])
                 match = MatchRecord(
                     provider="api-football", provider_match_id="77", kickoff_at=now,
                     league_id="1", league_name="Liga", country="PY",
@@ -38,12 +48,12 @@ class UserStrategyAlertTests(unittest.TestCase):
                 session.flush()
                 session.add_all([
                     SnapshotRecord(
-                        match_id=match.id, captured_at=now, minute=50, status="2H",
+                        match_id=match.id, captured_at=now + timedelta(minutes=50), minute=50, status="2H",
                         score_home=0, score_away=1, shots_home=2, shots_away=4,
                         shots_on_target_home=1, shots_on_target_away=2,
                     ),
                     SnapshotRecord(
-                        match_id=match.id, captured_at=now + timedelta(minutes=10),
+                        match_id=match.id, captured_at=now + timedelta(minutes=60),
                         minute=60, status="2H", score_home=0, score_away=1,
                         shots_home=6, shots_away=5, shots_on_target_home=3,
                         shots_on_target_away=2,
@@ -75,6 +85,56 @@ class UserStrategyAlertTests(unittest.TestCase):
             self.assertEqual(alert.owner_id, owner.id)
             self.assertEqual(alert.explanation["strategy_name"], "Tiros del local")
             self.assertEqual(alert.explanation["metrics"]["shots_home_last_10"], 4)
+            destinations = []
+
+            class Recorder:
+                def send(self, message):
+                    destinations.append((self.destination, message.alert_id))
+
+                def __init__(self, destination):
+                    self.destination = destination
+
+            with sessions() as session:
+                delivery = deliver_pending_alerts(
+                    session, telegram_token="test-token",
+                    notifier_factory=lambda token, destination: Recorder(destination),
+                )
+                repeated = deliver_pending_alerts(
+                    session, telegram_token="test-token",
+                    notifier_factory=lambda token, destination: Recorder(destination),
+                )
+            self.assertEqual(delivery["sent"], 1)
+            self.assertEqual(repeated["sent"], 0)
+            self.assertEqual(destinations, [("111", alert.alert_id)])
+            engine.dispose()
+
+    def test_stale_snapshot_cannot_create_new_alert(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            engine = build_engine(f"sqlite:///{(Path(directory) / 'stale.db').as_posix()}")
+            Base.metadata.create_all(engine)
+            sessions = sessionmaker(bind=engine)
+            old = datetime.now(UTC) - timedelta(days=2)
+            with sessions.begin() as session:
+                owner = UserRecord(email="stale@example.com", display_name="Stale", active=True,
+                                   role="USER", approval_status="APPROVED", created_at=old)
+                session.add(owner)
+                session.flush()
+                match = MatchRecord(provider="test", provider_match_id="old", kickoff_at=old,
+                                    league_id="1", league_name="Liga", country="PY",
+                                    favorite_side="home", favorite_odds=1.4,
+                                    favorite_probability=0.7, bookmaker_count=3,
+                                    status="2H", discovered_at=old, updated_at=old)
+                session.add(match)
+                session.flush()
+                session.add(SnapshotRecord(match_id=match.id, captured_at=old + timedelta(hours=1),
+                                           minute=60, status="2H", score_home=1, score_away=0))
+                session.add(StrategyRecord(owner_id=owner.id, strategy_key="old_rule", version=1,
+                                           name="Old rule", objective_type="goal", objective_subject="home",
+                                           horizon_minutes=10, config={"conditions": [{"metric": "minute", "operator": ">=", "value": 45}]},
+                                           active=True, created_at=old))
+            with sessions.begin() as session:
+                result = evaluate_owned_strategy_alerts(session)
+            self.assertEqual(result["created"], 0)
             engine.dispose()
 
 

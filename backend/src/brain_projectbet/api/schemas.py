@@ -32,6 +32,8 @@ class MatchSummary(BaseModel):
     status: str
     score_home: int | None
     score_away: int | None
+    last_snapshot_at: datetime | None = None
+    observation_state: Literal["LIVE", "STALE", "SCHEDULED", "FINISHED"] = "SCHEDULED"
 
 
 class SnapshotView(BaseModel):
@@ -168,6 +170,7 @@ class AlertView(BaseModel):
 class DashboardView(BaseModel):
     matches: int
     live_matches: int
+    stale_matches: int = 0
     strategies: int
     active_strategies: int
     alerts: int
@@ -259,3 +262,10 @@ class StrategyRuntimeView(BaseModel):
     missing_metrics: list[str] = Field(default_factory=list)
     metrics: dict[str, Any] = Field(default_factory=dict)
     error: str | None = None
+
+
+class StrategyPreviewView(StrategyRuntimeView):
+    match_id: int
+    snapshot_count: int
+    captured_at: datetime | None = None
+    observation_state: Literal["LIVE", "STALE", "SCHEDULED", "FINISHED"]

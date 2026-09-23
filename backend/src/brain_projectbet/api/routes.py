@@ -20,6 +20,7 @@ from brain_projectbet.api.schemas import (
     SnapshotView,
     StrategyCreate,
     StrategyRuntimeView,
+    StrategyPreviewView,
     StrategyView,
     TokenView,
     UserLogin,
@@ -49,9 +50,28 @@ from brain_projectbet.core.settings import get_settings
 from brain_projectbet.rules.catalog import STRATEGY_CATALOG
 from brain_projectbet.rules.expression import InvalidExpression, evaluate_expression
 from brain_projectbet.rules.runtime import evaluate_strategy_config
+from brain_projectbet.domain.live_state import observation_state
 
 
 router = APIRouter(prefix="/api/v1")
+
+
+def _latest_snapshot_times(session: Session, match_ids: list[int]) -> dict[int, datetime]:
+    if not match_ids:
+        return {}
+    rows = session.execute(
+        select(SnapshotRecord.match_id, func.max(SnapshotRecord.captured_at))
+        .where(SnapshotRecord.match_id.in_(match_ids))
+        .group_by(SnapshotRecord.match_id)
+    )
+    return {match_id: captured_at for match_id, captured_at in rows}
+
+
+def _match_view(match: MatchRecord, captured_at: datetime | None) -> MatchSummary:
+    return MatchSummary.model_validate(match).model_copy(update={
+        "last_snapshot_at": captured_at,
+        "observation_state": observation_state(match.status, match.kickoff_at, captured_at),
+    })
 
 
 @router.post("/auth/register", response_model=RegistrationView, status_code=status.HTTP_201_CREATED)
@@ -210,10 +230,15 @@ def delete_notification_endpoint(
 
 @router.get("/dashboard", response_model=DashboardView)
 def dashboard(session: Session = Depends(get_db)) -> DashboardView:
-    matches = session.scalar(select(func.count()).select_from(MatchRecord)) or 0
-    live = session.scalar(select(func.count()).select_from(MatchRecord).where(
-        MatchRecord.status.in_(("1H", "HT", "2H", "ET", "BT", "P"))
-    )) or 0
+    all_matches = list(session.scalars(select(MatchRecord)))
+    latest_times = _latest_snapshot_times(session, [match.id for match in all_matches])
+    states = [
+        observation_state(match.status, match.kickoff_at, latest_times.get(match.id))
+        for match in all_matches
+    ]
+    matches = len(all_matches)
+    live = states.count("LIVE")
+    stale = states.count("STALE")
     strategies = session.scalar(select(func.count()).select_from(StrategyRecord)) or 0
     active_strategies = session.scalar(select(func.count()).select_from(StrategyRecord).where(
         StrategyRecord.active.is_(True)
@@ -230,6 +255,7 @@ def dashboard(session: Session = Depends(get_db)) -> DashboardView:
     return DashboardView(
         matches=matches,
         live_matches=live,
+        stale_matches=stale,
         strategies=strategies,
         active_strategies=active_strategies,
         alerts=alerts,
@@ -249,7 +275,9 @@ def list_matches(
     query = select(MatchRecord).order_by(MatchRecord.kickoff_at.desc()).limit(limit)
     if match_status:
         query = query.where(MatchRecord.status == match_status)
-    return list(session.scalars(query))
+    matches = list(session.scalars(query))
+    latest_times = _latest_snapshot_times(session, [match.id for match in matches])
+    return [_match_view(match, latest_times.get(match.id)) for match in matches]
 
 
 @router.get("/matches/{provider}/{fixture_id}", response_model=MatchSummary)
@@ -260,7 +288,8 @@ def get_match(provider: str, fixture_id: str, session: Session = Depends(get_db)
     ))
     if match is None:
         raise HTTPException(status_code=404, detail="partido no encontrado")
-    return match
+    latest_times = _latest_snapshot_times(session, [match.id])
+    return _match_view(match, latest_times.get(match.id))
 
 
 @router.get("/matches/{provider}/{fixture_id}/snapshots", response_model=list[SnapshotView])
@@ -379,6 +408,70 @@ def strategy_catalog(session: Session = Depends(get_db)):
         .order_by(MatchRecord.country)
     ))
     return {**STRATEGY_CATALOG, "leagues": leagues, "countries": countries}
+
+
+@router.get("/strategies/{strategy_id}/preview", response_model=StrategyPreviewView)
+def preview_strategy(
+    strategy_id: int,
+    match_id: int = Query(ge=1),
+    session: Session = Depends(get_db),
+    user: UserRecord = Depends(get_current_user),
+):
+    strategy = session.get(StrategyRecord, strategy_id)
+    if strategy is None or (
+        user.role != "ADMIN" and strategy.owner_id not in (None, user.id)
+    ):
+        raise HTTPException(status_code=404, detail="estrategia no encontrada")
+    match = session.get(MatchRecord, match_id)
+    if match is None:
+        raise HTTPException(status_code=404, detail="partido no encontrado")
+    records = list(session.scalars(
+        select(SnapshotRecord)
+        .where(SnapshotRecord.match_id == match.id)
+        .order_by(SnapshotRecord.captured_at)
+    ))
+    captured_at = records[-1].captured_at if records else None
+    state = observation_state(match.status, match.kickoff_at, captured_at)
+    base = dict(
+        strategy_id=strategy.id,
+        strategy_key=strategy.strategy_key,
+        strategy_version=strategy.version,
+        statistical_status=strategy.statistical_status,
+        match_id=match.id,
+        snapshot_count=len(records),
+        captured_at=captured_at,
+        observation_state=state,
+    )
+    if not records:
+        return StrategyPreviewView(**base, matched=None, error="partido sin capturas")
+    snapshots = [snapshot_record_to_domain(match, record) for record in records]
+    try:
+        result = evaluate_strategy_config(
+            strategy.config,
+            snapshots,
+            favorite_side=match.favorite_side,
+            context={
+                "home_odds": match.home_odds,
+                "draw_odds": match.draw_odds,
+                "away_odds": match.away_odds,
+                "home_probability": match.home_probability,
+                "draw_probability": match.draw_probability,
+                "away_probability": match.away_probability,
+                "favorite_odds": match.favorite_odds,
+                "favorite_probability": match.favorite_probability,
+                "league_name": match.league_name,
+                "country": match.country,
+            },
+        )
+    except InvalidExpression as error:
+        return StrategyPreviewView(**base, matched=None, error=str(error))
+    return StrategyPreviewView(
+        **base,
+        matched=result.matched,
+        reasons=list(result.reasons),
+        missing_metrics=list(result.missing_metrics),
+        metrics=result.metrics,
+    )
 
 
 @router.post("/strategies", response_model=StrategyView, status_code=status.HTTP_201_CREATED)

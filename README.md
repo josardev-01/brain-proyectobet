@@ -81,7 +81,13 @@ python backend/scripts/send_pending_alerts.py --dry-run
 python backend/scripts/send_database_alerts.py --maximum 20
 ```
 
-El flujo descubre favoritos claros, monitorea únicamente los escenarios relevantes, finaliza partidos con eventos exactos, registra resultados para backtesting y conserva las alertas en una bandeja entregable por Telegram.
+El flujo local permite descubrir favoritos claros con `--coverage favorite`. El
+worker Docker usa `--coverage all-odds`: registra encuentros con consenso 1X2
+completo dentro de la cuota disponible, captura estadísticas desde el comienzo
+del partido y aplica el filtro de favorito solo al evaluar esa estrategia.
+Finaliza partidos con eventos exactos, registra resultados para backtesting y
+conserva alertas en una bandeja entregable por Telegram. La cobertura sigue
+siendo parcial si el proveedor no ofrece cuotas o hay más páginas que las leídas.
 
 El descubrimiento enriquece cada candidato con nombres e IDs de equipos usando
 el catálogo de fixtures de API-Football. `reconcile_live_providers.py` compara
@@ -89,14 +95,23 @@ esos nombres con APIFootball.com. Sin `--write-snapshots` solo informa el cruce;
 la escritura explícita conserva el ID canónico de API-Football y registra el
 proveedor e ID de origen dentro de la metadata.
 
-`run_matchday.py` es el ejecutor persistente y reiniciable. Empieza a consultar en el minuto 35 para llegar con línea base al minuto 45, agrupa partidos solapados en una sola ventana, consulta cada diez minutos y finaliza la jornada tres horas después del último comienzo. Diez minutos conserva el intervalo temporal exacto que evalúa la heurística y deja margen suficiente en la cuota actual; puede ajustarse con `--interval-seconds`. `--dry-run` permite revisar el horario sin consumir cuota y `--once` ejecuta solo la acción que corresponde al momento actual, útil para un programador externo.
+`run_matchday.py` es el ejecutor persistente y reiniciable. Empieza a observar
+desde el comienzo para admitir reglas de cualquier momento; `--start-minute 35`
+restaura el inicio anterior. Agrupa partidos solapados, consulta cada diez minutos
+por defecto y finaliza la jornada tres horas después del último comienzo. Docker
+usa un intervalo de 120 segundos para conservar mejor las ventanas recientes.
+`--dry-run` revisa el horario sin consumir cuota y `--once` ejecuta solo la
+acción correspondiente al momento actual.
 
 Por defecto `run_matchday.py` usa APIFootball.com para el reloj y las
 estadísticas live, sin consumir API-Football en cada ciclo. `--live-provider
 api-football` conserva el monitor anterior como respaldo. Docker incluye el
 servicio `monitor`: crea el registro diario si falta, observa cada 120 segundos
-dentro de las ventanas, sincroniza PostgreSQL y ejecuta la finalización para
-alimentar backtesting. El `notifier` entrega a Telegram las alertas persistidas.
+dentro de las ventanas, sincroniza PostgreSQL, reintenta el cierre de jornadas
+anteriores y ejecuta la finalización para alimentar backtesting. El `notifier`
+entrega a Telegram las alertas persistidas. El panel solo cuenta como vivos los
+partidos con capturas recientes; los estados crudos antiguos se indican como
+datos desactualizados.
 
 La definición activa está en [`backend/config/strategies/favorite_losing_pressure_v2.json`](backend/config/strategies/favorite_losing_pressure_v2.json). Los comandos aceptan `--strategy` para ejecutar otra versión sin modificar el motor.
 

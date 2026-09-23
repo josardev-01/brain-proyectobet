@@ -46,3 +46,6 @@ El runtime transforma snapshots normalizados en un diccionario estable de métri
 - El editor crea objetivos dinámicos y condiciones declarativas. El evaluador genérico soporta grupos `AND`, `OR`, `NOT` y comparadores seguros; emitir y etiquetar alertas de un nuevo tipo de evento todavía requiere su contrato específico.
 - Las credenciales Telegram permanecen en variables de entorno; no se muestran ni guardan desde la UI.
 - El estado estadístico de la estrategia inicial sigue siendo `HEURÍSTICA`; la aplicación no lo presenta como probabilidad validada.
+- El registro operativo amplio reúne partidos con consenso 1X2 completo dentro de las páginas y consultas presupuestadas. No representa todos los partidos del proveedor ni competiciones sin cuotas.
+- El estado visible `LIVE` requiere captura de menos de diez minutos y comienzo del partido dentro de cuatro horas. Un estado crudo en vivo sin datos recientes, o un partido todavía programado varias horas después de su inicio previsto, se presenta como `STALE`. Los datos viejos no generan alertas nuevas. El finalizador reintenta jornadas anteriores dentro de la reserva diaria.
+- Dashboard, lista y detalle de partidos consultan nuevamente la base cada 30 segundos mientras la pestaña está visible; este refresco no llama directamente a proveedores externos.

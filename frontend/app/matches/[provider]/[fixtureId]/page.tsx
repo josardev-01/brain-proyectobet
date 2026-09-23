@@ -1,6 +1,7 @@
 import { PageHeader } from "@/components/shell";
 import { apiGet, type Match, type Snapshot, type StrategyEvaluation } from "@/lib/api";
 import { cookies } from "next/headers";
+import { AutoRefresh } from "@/components/auto-refresh";
 
 export default async function MatchDetail({ params }: { params: Promise<{ provider: string; fixtureId: string }> }) {
   const { provider, fixtureId } = await params;
@@ -12,8 +13,11 @@ export default async function MatchDetail({ params }: { params: Promise<{ provid
   ]);
   if (!match) return <><PageHeader eyebrow="Partido" title={`Fixture ${fixtureId}`} copy="No se encontró este partido en la base." online={online} /></>;
   const latest = snapshots.at(-1);
+  const stateLabel = match.observation_state === "LIVE" ? "En vivo" : match.observation_state === "STALE" ? "Datos desactualizados" : match.observation_state === "FINISHED" ? "Finalizado" : "Programado";
   return <>
+    <AutoRefresh />
     <PageHeader eyebrow={`${match.country} · ${match.league_name}`} title={`${match.home_team_name || "Local"} — ${match.away_team_name || "Visitante"}`} copy={`Favorito ${match.favorite_side === "home" ? "local" : "visitante"} al ${Math.round(match.favorite_probability * 100)}% · cuota ${match.favorite_odds.toFixed(2)}`} online={online} />
+    <p className="data-freshness">{stateLabel} · {match.last_snapshot_at ? `Última captura ${new Date(match.last_snapshot_at).toLocaleString("es-PY")}` : "Sin capturas"}</p>
     <section className="hero-grid detail-metrics">
       <article className="metric featured"><span>Marcador</span><strong>{latest?.score_home ?? match.score_home ?? "–"} : {latest?.score_away ?? match.score_away ?? "–"}</strong><small>{latest?.minute ? `Minuto ${latest.minute}${latest.minute_extra ? `+${latest.minute_extra}` : ""}` : match.status}</small></article>
       <article className="metric"><span>Tiros a puerta</span><strong>{latest?.shots_on_target_home ?? "–"} : {latest?.shots_on_target_away ?? "–"}</strong><small>acumulado observado</small></article>

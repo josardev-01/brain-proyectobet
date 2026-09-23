@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/shell";
 import { apiGet, type Dashboard, type Match } from "@/lib/api";
+import { AutoRefresh } from "@/components/auto-refresh";
 
 const emptyDashboard: Dashboard = {
-  matches: 0, live_matches: 0, strategies: 0, active_strategies: 0, alerts: 0,
+  matches: 0, live_matches: 0, stale_matches: 0, strategies: 0, active_strategies: 0, alerts: 0,
   snapshots: 0, backtest_records: 0, resolved_alerts: 0, precision: null,
   statistical_status: "EXPERIMENTAL",
 };
@@ -14,9 +15,10 @@ export default async function DashboardPage() {
     apiGet<Match[]>("/matches?limit=5", []),
   ]);
   return <>
+    <AutoRefresh />
     <PageHeader eyebrow="Centro de operaciones" title="Señales con contexto, no ruido." copy="Supervisa captura, estrategias y alertas desde una sola vista." online={online} />
     <section className="hero-grid">
-      <article className="metric featured"><span>Partidos registrados</span><strong>{dashboard.matches}</strong><small>{dashboard.live_matches} en vivo ahora</small></article>
+      <article className="metric featured"><span>Partidos registrados</span><strong>{dashboard.matches}</strong><small>{dashboard.live_matches} en vivo · {dashboard.stale_matches} con datos desactualizados</small></article>
       <article className="metric"><span>Snapshots</span><strong>{dashboard.snapshots}</strong><small>historia temporal persistida</small></article>
       <article className="metric"><span>Alertas</span><strong>{dashboard.alerts}</strong><small>eventos explicables</small></article>
       <article className="metric"><span>Estrategias activas</span><strong>{dashboard.active_strategies}</strong><small>de {dashboard.strategies} versiones</small></article>

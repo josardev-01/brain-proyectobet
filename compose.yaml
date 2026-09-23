@@ -77,11 +77,15 @@ services:
       - >-
         while true; do
           day=$$(date -u +%F);
-          registry="data/raw/eligible/$$day.json";
+          registry="data/raw/coverage/$$day.json";
           if [ ! -f "$$registry" ]; then
-            python backend/scripts/discover_candidates.py --date "$$day" --max-pages 3 --daily-reserve 15;
+            python backend/scripts/discover_candidates.py --date "$$day" --coverage all-odds --max-pages 3 --daily-reserve 15 --output "$$registry";
+          fi;
+          if [ -f "$$registry" ]; then
+            python backend/scripts/sync_database.py --registry "$$registry";
           fi;
           python backend/scripts/run_matchday.py --registry "$$registry" --live-provider apifootball-com --interval-seconds 120 --daily-reserve 15;
+          python backend/scripts/finalize_backlog.py --days 30 --maximum-fixtures 3 --daily-reserve 15;
           sleep 300;
         done
     environment:

@@ -167,6 +167,14 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .evaluation-card h2 { margin: 0; font-size: 18px; }
 .evaluation-card > p { margin: 18px 0 5px; line-height: 1.6; }
 .evaluation-card > small { color: var(--orange); }
+.data-freshness { color: var(--orange); font-size: 12px; margin: -12px 0 18px; }
+.strategy-preview { display: grid; gap: 9px; margin-top: 14px; }
+.strategy-preview label { display: grid; gap: 6px; color: var(--muted); font-size: 11px; }
+.strategy-preview select { width: 100%; min-width: 0; }
+.strategy-preview button { width: fit-content; }
+.strategy-preview small { display: block; color: var(--muted); line-height: 1.5; }
+.preview-result { display: grid; gap: 4px; padding: 11px; border: 1px solid var(--line); border-radius: 9px; }
+.preview-result strong { font-size: 13px; }
 
 @media (max-width: 1050px) {
   .hero-grid { grid-template-columns: repeat(2, 1fr); }

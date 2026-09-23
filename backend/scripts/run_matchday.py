@@ -62,6 +62,7 @@ def main() -> int:
     )
     parser.add_argument("--strategy", type=Path, default=DEFAULT_STRATEGY_PATH)
     parser.add_argument("--interval-seconds", type=int, default=600)
+    parser.add_argument("--start-minute", type=int, default=0)
     parser.add_argument("--maximum-matches", type=int, default=3)
     parser.add_argument("--daily-reserve", type=int, default=15)
     parser.add_argument(
@@ -82,13 +83,13 @@ def main() -> int:
         help="No sincroniza los archivos capturados hacia la base de datos",
     )
     args = parser.parse_args()
-    if args.interval_seconds <= 0 or args.maximum_matches <= 0 or args.finalization_reserve < 0:
+    if args.interval_seconds <= 0 or args.maximum_matches <= 0 or args.finalization_reserve < 0 or args.start_minute < 0:
         parser.error("intervalo y máximo positivos; reserva de cierre no negativa")
     if not args.registry.exists():
         parser.error(f"registro no encontrado: {args.registry}")
 
     fixtures = load_eligible_fixtures(args.registry)
-    plan = build_matchday_plan(fixtures)
+    plan = build_matchday_plan(fixtures, warmup_after_kickoff_minutes=args.start_minute)
     print(json.dumps({"registry": str(args.registry), **plan_payload(plan)}, ensure_ascii=False))
     if args.dry_run or not fixtures:
         return 0
